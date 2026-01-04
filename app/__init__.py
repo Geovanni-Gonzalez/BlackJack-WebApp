@@ -11,8 +11,18 @@ def create_app():
                 static_folder=static_dir, 
                 template_folder=template_dir)
     
+    # DB Config
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///blackjack.db'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    
+    from app.web.models import db
+    db.init_app(app)
+    
     # Register Blueprints
     from app.web import web_bp
     app.register_blueprint(web_bp)
+    
+    with app.app_context():
+        db.create_all()
     
     return app

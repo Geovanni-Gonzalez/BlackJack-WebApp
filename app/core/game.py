@@ -14,6 +14,9 @@ class Hand:
         self.current_bet = 0
         self.initial_bet = 0 # To track for double down
         self.is_double_down = False
+        self.is_split = False
+        self.is_insurance = False
+        self.split_pair_value = None 
 
     def add_card(self, card):
         self.cards.append(card)
@@ -55,7 +58,7 @@ class BlackJackGame:
     def __init__(self, num_decks=6):
         self.deck = Deck(num_decks=num_decks)
         self.counter = CardCounter()
-        self.dealer_hand = Hand("Dealer", balance=float('inf'))
+        self.dealer_hand = Hand("Dealer", balance=1000000)
         self.players = [] 
         self.current_player_idx = 0
         self.game_over = True # Starts as over until bets are placed
@@ -109,7 +112,7 @@ class BlackJackGame:
         
         # Shuffle if needed
         if self.deck.remaining() < 20: 
-            self.deck.reshuffle()
+            self.deck.shuffle()
             self.counter.reset()
 
         # Deal initial 2 cards
@@ -134,6 +137,66 @@ class BlackJackGame:
             self.next_turn()
         else:
             self.message = "Cannot double down (not 2 cards or insufficient funds)"
+
+    def player_split(self):
+        if self.game_over or self.waiting_for_bets: return
+        idx = self.current_player_idx
+        p = self.players[idx]
+        
+        # Split conditions: 2 cards, same rank/value, enough balance
+        if len(p.cards) == 2 and p.cards[0].rank == p.cards[1].rank and p.balance >= p.initial_bet:
+            # Create new hand
+            new_hand = Hand(p.owner_name, balance=p.balance) 
+            new_hand.is_split = True
+            new_hand.place_bet(p.initial_bet)
+            
+            # Move one card to new hand
+            card = p.cards.pop()
+            new_hand.add_card(card)
+            p.calculate()
+            
+            # Deal new card to both hands
+            self._deal_card_to(p)
+            self._deal_card_to(new_hand)
+            
+            # Insert new hand after current one
+            self.players.insert(idx + 1, new_hand)
+            self.message = "Hand Split! Playing first hand."
+            
+            # Update parent balance (since we shared the object logic)
+            self._update_owner_balance(p.owner_name, -p.initial_bet)
+            self._sync_balances()
+        else:
+            self.message = "Cannot split (not a pair or insufficient funds)"
+
+    def player_insurance(self):
+        """Allows human player to take insurance if dealer shows an Ace."""
+        if self.game_over or self.waiting_for_bets: return
+        p = self.players[0] # Only human for now
+        # Up-card is index 1
+        if len(p.cards) == 2 and len(self.dealer_hand.cards) >= 2 and self.dealer_hand.cards[1].rank == 'A' and p.balance >= p.initial_bet // 2:
+            p.balance -= p.initial_bet // 2
+            p.is_insurance = True
+            self.message = "Insurance Taken!"
+        else:
+            self.message = "Cannot take insurance."
+
+    def _sync_balances(self):
+        """Ensures all hands for the same owner show the same balance."""
+        owner_balances = {}
+        for p in self.players:
+            if p.owner_name not in owner_balances:
+                owner_balances[p.owner_name] = p.balance
+            else:
+                # If they differ, take the latest/highest? 
+                # Actually, our logic should keep them in sync. 
+                # Let's just force the first one's balance to others.
+                p.balance = owner_balances[p.owner_name]
+
+    def _update_owner_balance(self, owner_name, net_change):
+        for p in self.players:
+            if p.owner_name == owner_name:
+                p.balance += net_change
 
     def _deal_card_to(self, hand):
         card = self.deck.deal()
@@ -163,27 +226,40 @@ class BlackJackGame:
     def next_turn(self):
         self.current_player_idx += 1
         
-        # Check if next player is AI
-        if self.current_player_idx < len(self.players):
+        while self.current_player_idx < len(self.players):
             player = self.players[self.current_player_idx]
             if "AI" in player.owner_name:
                 self.ai_turn(player)
-        else:
-            self.dealer_turn()
+                self.current_player_idx += 1
+            else:
+                # It's a Human player (e.g. from a split)
+                return
+        
+        # All players finished
+        self.dealer_turn()
 
     def ai_turn(self, player):
         from app.ai.qlearning import QLearningAgent
         from app.ai.montecarlo import MonteCarloSimulator
         
+        # Instantiate locally to avoid circular import issues at class level, 
+        # but consider moving to a factory if performance is an issue.
         agent = QLearningAgent() 
-        simulator = MonteCarloSimulator(num_simulations=100)
+        simulator = MonteCarloSimulator(num_simulations=50) # Reduced for performance
         
         while not player.busted and not player.standing:
             strategy = "Basic Rules"
             action = 0 # Default Stand
             prob_hit = 0
             
-            if self.difficulty == "EASY":
+            # Dealer up-card safety check
+            dealer_upcard = None
+            if len(self.dealer_hand.cards) >= 2:
+                dealer_upcard = self.dealer_hand.cards[1]
+            elif len(self.dealer_hand.cards) >= 1:
+                dealer_upcard = self.dealer_hand.cards[0]
+
+            if self.difficulty == "EASY" or dealer_upcard is None:
                 # Easy difficulty: Hit until 16, regardless of dealer
                 action = 1 if player.value < 16 else 0
                 strategy = "Basic Rules"
@@ -193,7 +269,7 @@ class BlackJackGame:
                 action = agent.choose_action(state_val) 
                 
                 # Enrichment for logging
-                prob_hit = simulator.simulate_hit_win_rate(player, self.dealer_hand.cards[1])
+                prob_hit = simulator.simulate_hit_win_rate(player, dealer_upcard)
                 strategy = "Q-Learning"
                 if abs(self.counter.running_count) >= 2: strategy = "Card Counting"
                 elif prob_hit > 0.5: strategy = "Monte Carlo"
@@ -219,7 +295,12 @@ class BlackJackGame:
             else:
                 player.standing = True
         
-        self.next_turn()
+        # Don't call next_turn here in a recursion!
+        # Instead, we will handle the turn chain in the next_turn method itself.
+        # But wait, ai_turn IS called by next_turn. 
+        # To avoid recursion, we should use a loop or a trampoline.
+        # For now, let's keep it but ensure it's the LAST thing done.
+        # Actually, let's return and let next_turn handle it.
 
     def dealer_turn(self):
         # Dealer must hit until 17
@@ -233,20 +314,27 @@ class BlackJackGame:
         self.winner_indices = []
         results = []
         dealer_val = self.dealer_hand.value
+        dealer_bj = (dealer_val == 21 and len(self.dealer_hand.cards) == 2)
         
         for i, p in enumerate(self.players):
+            # Insurance payout
+            if p.is_insurance and dealer_bj:
+                payout = (p.initial_bet // 2) * 3 # 2:1 payout + original insurance bet back
+                self._update_owner_balance(p.owner_name, payout)
+                results.append(f"{p.owner_name}: Insurance Payout (+{payout})")
+
             if p.withdrawn:
                 results.append(f"{p.owner_name}: Withdrawn")
-                # Withdrawn players usually lose half bet or all, let's say they keep current balance (already deducted)
                 continue
             
             win_val = determine_winner(p.value, dealer_val)
             if win_val == 1:
                 self.winner_indices.append(i)
                 # Payout: 3:2 for Blackjack (2 cards totaling 21), 1:1 otherwise
-                multiplier = 2.5 if (p.value == 21 and len(p.cards) == 2) else 2.0
+                # Split hands usually don't get 3:2 payout in many casinos, but we'll allow it if 21
+                multiplier = 2.5 if (p.value == 21 and len(p.cards) == 2 and not p.is_split) else 2.0
                 payout = int(p.current_bet * multiplier)
-                p.balance += payout
+                self._update_owner_balance(p.owner_name, payout)
                 
                 results.append(f"{p.owner_name}: WIN (+{payout})")
                 if "Human" in p.owner_name: self.stats['player_wins'] += 1
@@ -255,10 +343,11 @@ class BlackJackGame:
                 results.append(f"{p.owner_name}: LOSS")
             else:
                 # Push: return bet
-                p.balance += p.current_bet
+                self._update_owner_balance(p.owner_name, p.current_bet)
                 results.append(f"{p.owner_name}: DRAW")
         
         self.message = " | ".join(results)
+        self._sync_balances() # Final check
 
     def get_state(self):
         return {

@@ -1,8 +1,10 @@
 import random
+import os
+import json
 from app.core.rules import determine_winner
 
 class QLearningAgent:
-    def __init__(self, alpha=0.1, gamma=0.9, epsilon=0.1):
+    def __init__(self, alpha=0.1, gamma=0.9, epsilon=0.1, model_path='q_table.json'):
         """
         alpha: Learning Rate
         gamma: Discount Factor
@@ -13,6 +15,27 @@ class QLearningAgent:
         self.gamma = gamma
         self.epsilon = epsilon
         self.training_stats = []
+        self.model_path = model_path
+        self.load()
+
+    def save(self):
+        """Saves the Q-table to a JSON file."""
+        # Convert tuple keys to strings for JSON
+        serializable_q = {str(k): v for k, v in self.q_table.items()}
+        with open(self.model_path, 'w') as f:
+            json.dump(serializable_q, f)
+
+    def load(self):
+        """Loads the Q-table from a JSON file."""
+        if os.path.exists(self.model_path):
+            try:
+                with open(self.model_path, 'r') as f:
+                    data = json.load(f)
+                    # Convert string keys back to tuples using eval
+                    self.q_table = {eval(k): v for k, v in data.items()}
+            except Exception as e:
+                print(f"Error loading Q-table: {e}")
+                self.q_table = {}
 
     def get_state(self, game, player_hand):
         """
@@ -20,8 +43,12 @@ class QLearningAgent:
         State: (Player Sum, Dealer Show Card Value, True Count Bucket)
         """
         player_val = player_hand.value
-        # Check bounds for dealer card (might be hidden or not dealt if game logic differs, but here standard)
-        dealer_card_val = game.dealer_hand.cards[1].value 
+        # Use dealer's visible card (usually index 1)
+        dealer_card_val = 0
+        if len(game.dealer_hand.cards) >= 1:
+            # If 2 cards, use index 1 (standard up-card), else index 0
+            idx = 1 if len(game.dealer_hand.cards) >= 2 else 0
+            dealer_card_val = game.dealer_hand.cards[idx].value
         
         # True Count Bucket
         running_count = game.counter.running_count
@@ -65,6 +92,9 @@ class QLearningAgent:
             
         # Update
         q_vals[action] = old_val + self.alpha * (target - old_val)
+        
+        if done:
+            self.save()
 
     def train(self, num_episodes=10000):
         wins = 0
