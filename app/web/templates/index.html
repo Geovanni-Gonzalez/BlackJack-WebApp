@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlackJack AI</title>
-    <link rel="stylesheet" href="{{ url_for('web.static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 
 <body>
@@ -20,26 +20,63 @@
 
             <div class="info-panel">
                 <div id="message-area" class="message">Welcome! Press New Game to start.</div>
+                <div id="stats-area" class="stats-summary" style="display: none;">
+                    <h3>Session Stats & AI Evolution</h3>
+                    <p>Rounds: <span id="stat-rounds">0</span> | Human Wins: <span id="stat-human">0</span> | AI Wins:
+                        <span id="stat-ai">0</span>
+                    </p>
+                    <p>AI Accuracy: <span id="stat-accuracy">0%</span> (Decisions: <span id="stat-decisions">0</span>)
+                    </p>
+                </div>
                 <div class="stats">
                     <p>Count: <span id="count-value">0</span> (<span id="count-suggestion">Neutral</span>)</p>
-                    <p>AI Advice: <span id="ai-advice">...</span> (Hit: <span id="prob-hit">0%</span>, Stand: <span
-                            id="prob-stand">0%</span>)</p>
+                    <p><strong>AI Advice:</strong> <span id="ai-advice">...</span></p>
+                    <p>Probability (Win if Hit): <span id="prob-hit">0%</span> | (Win if Stand): <span
+                            id="prob-stand">0%</span></p>
+                </div>
+                <div id="decision-log" class="decision-log" style="display: none;">
+                    <h4>Latest AI Decision Basis</h4>
+                    <ul id="log-list"></ul>
                 </div>
             </div>
 
-            <div class="hand-section" id="player-section">
-                <h2>Player Hand <span id="player-score"></span></h2>
-                <div class="cards" id="player-cards"></div>
+            <div id="players-container">
+                <!-- Player hands will be injected here -->
             </div>
         </div>
 
         <div class="controls">
-            <button id="btn-new" onclick="startGame()">New Game</button>
-            <button id="btn-hit" onclick="hit()" disabled>Hit</button>
-            <button id="btn-stand" onclick="stand()" disabled>Stand</button>
+            <div id="betting-area">
+                <div class="difficulty-selector">
+                    Difficulty:
+                    <select id="diff-select">
+                        <option value="EASY">Easy (Basic)</option>
+                        <option value="HARD" selected>Hard (Advanced AI)</option>
+                    </select>
+                </div>
+                <div class="chip-controls">
+                    <button onclick="addBet(10)">$10</button>
+                    <button onclick="addBet(50)">$50</button>
+                    <button onclick="addBet(100)">$100</button>
+                    <button onclick="resetBet()">Reset</button>
+                </div>
+                <div class="bet-info">
+                    Bet: $<span id="current-bet-display">10</span>
+                </div>
+                <button class="primary-btn" id="btn-start" onclick="placeBet()">START ROUND</button>
+            </div>
+
+            <div id="game-actions" style="display: none;">
+                <button id="btn-hit" onclick="hit()">Hit</button>
+                <button id="btn-stand" onclick="stand()">Stand</button>
+                <button id="btn-double" onclick="doubleDown()">Double Down</button>
+                <button id="btn-withdraw" onclick="withdraw()">Withdraw</button>
+            </div>
+
+            <button id="btn-new" onclick="startGame()" style="display: none;">New Session</button>
         </div>
     </div>
-    <script src="{{ url_for('web.static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 
 </html>

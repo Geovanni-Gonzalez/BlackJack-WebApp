@@ -29,35 +29,29 @@ class MonteCarloSimulator:
         #    or we can play a simple strategy like "Hit until 17".
         
         for _ in range(self.num_simulations):
-            # Clone State (simplified)
-            # We create a new game instance to avoid messing up the real game
             from app.core.game import BlackJackGame
             sim_game = BlackJackGame()
+            sim_game.start_new_round(num_ai=0) # Simple 1v1 for simulation
             
-            # Setup specific hands
-            # Ideally we'd remove cards from sim_game.deck that are already seen.
-            # For this basic version, we assume a full 6-deck shoe for every sim (Monte Carlo approximation).
-            
-            sim_game.player_hand = copy.deepcopy(current_player_hand)
-            sim_game.dealer_hand.cards = [current_dealer_hand_card] # We only know one dealer card
+            # Setup specific state
+            sim_game.players[0] = copy.deepcopy(current_player_hand)
+            sim_game.dealer_hand.cards = [current_dealer_hand_card]
             sim_game.dealer_hand.calculate()
             
             # Action: Hit
             sim_game.player_hit()
             
-            if sim_game.player_hand.busted:
-                # Loss
-                continue
+            player = sim_game.players[0]
+            if player.busted: continue
                 
-            # After Hit, play out Dealer
-            # (Assuming Player stands after this hit, or we could continue player turn)
-            # Let's assume Player Stands to see if this *state* is good.
             sim_game.dealer_turn()
             
-            if sim_game.winner == 1:
+            # Use direct determine_winner since winner attr is gone
+            result = determine_winner(player.value, sim_game.dealer_hand.value)
+            if result == 1:
                 wins += 1
-            elif sim_game.winner == 0:
-                draws += 0.5 # Count draw as half win? Or just track raw wins.
+            elif result == 0:
+                draws += 0.5
                 
         return (wins + draws) / self.num_simulations
 
@@ -71,16 +65,20 @@ class MonteCarloSimulator:
         for _ in range(self.num_simulations):
             from app.core.game import BlackJackGame
             sim_game = BlackJackGame()
-            sim_game.player_hand = copy.deepcopy(current_player_hand)
+            sim_game.start_new_round(num_ai=0)
+            
+            sim_game.players[0] = copy.deepcopy(current_player_hand)
             sim_game.dealer_hand.cards = [current_dealer_hand_card]
             sim_game.dealer_hand.calculate()
             
             # Action: Stand (Immediate Dealer Turn)
             sim_game.dealer_turn()
             
-            if sim_game.winner == 1:
+            player = sim_game.players[0]
+            result = determine_winner(player.value, sim_game.dealer_hand.value)
+            if result == 1:
                 wins += 1
-            elif sim_game.winner == 0:
+            elif result == 0:
                 draws += 0.5
                 
         return (wins + draws) / self.num_simulations

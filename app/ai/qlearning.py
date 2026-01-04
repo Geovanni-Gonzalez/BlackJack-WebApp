@@ -14,12 +14,12 @@ class QLearningAgent:
         self.epsilon = epsilon
         self.training_stats = []
 
-    def get_state(self, game):
+    def get_state(self, game, player_hand):
         """
         Extracts state from game object.
         State: (Player Sum, Dealer Show Card Value, True Count Bucket)
         """
-        player_val = game.player_hand.value
+        player_val = player_hand.value
         # Check bounds for dealer card (might be hidden or not dealt if game logic differs, but here standard)
         dealer_card_val = game.dealer_hand.cards[1].value 
         
@@ -75,9 +75,10 @@ class QLearningAgent:
         
         for i in range(num_episodes):
             game = BlackJackGame()
-            game.start_new_round()
+            game.start_new_round(num_ai=0) # Train solo for speed
             
-            state = self.get_state(game)
+            human_player = game.players[0]
+            state = self.get_state(game, human_player)
             
             while not game.game_over:
                 action = self.choose_action(state)
@@ -86,29 +87,28 @@ class QLearningAgent:
                 if action == 1: # Hit
                     game.player_hit()
                     reward = 0
-                    if game.player_hand.busted:
+                    if human_player.busted:
                         reward = -1
                         done = True
                     else:
                         done = False
                 else: # Stand
                     game.player_stand()
-                    # Game is now over (dealer played)
                     done = True
-                    if game.winner == 1:
-                        reward = 1
-                    elif game.winner == -1:
-                        reward = -1
-                    else:
-                        reward = 0
+                    # In new game engine, we check result manually for reward
+                    res = determine_winner(human_player.value, game.dealer_hand.value)
+                    if res == 1: reward = 1
+                    elif res == -1: reward = -1
+                    else: reward = 0
                 
-                next_state = self.get_state(game)
+                next_state = self.get_state(game, human_player)
                 self.learn(state, action, reward, next_state, done)
                 state = next_state
                 
                 if done:
-                    if game.winner == 1: wins += 1
-                    elif game.winner == -1: losses += 1
+                    res = determine_winner(human_player.value, game.dealer_hand.value)
+                    if res == 1: wins += 1
+                    elif res == -1: losses += 1
                     else: draws += 1
             
             # Log progress every 1000
