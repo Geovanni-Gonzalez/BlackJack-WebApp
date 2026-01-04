@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlackJack AI</title>
+    <link rel="stylesheet" href="{{ url_for('web.static', filename='style.css') }}">
+</head>
+
+<body>
+    <div class="container">
+        <h1>BlackJack AI Simulator</h1>
+
+        <div class="game-board">
+            <div class="hand-section" id="dealer-section">
+                <h2>Dealer Hand <span id="dealer-score"></span></h2>
+                <div class="cards" id="dealer-cards"></div>
+            </div>
+
+            <div class="info-panel">
+                <div id="message-area" class="message">Welcome! Press New Game to start.</div>
+                <div class="stats">
+                    <p>Count: <span id="count-value">0</span> (<span id="count-suggestion">Neutral</span>)</p>
+                    <p>AI Advice: <span id="ai-advice">...</span> (Hit: <span id="prob-hit">0%</span>, Stand: <span
+                            id="prob-stand">0%</span>)</p>
+                </div>
+            </div>
+
+            <div class="hand-section" id="player-section">
+                <h2>Player Hand <span id="player-score"></span></h2>
+                <div class="cards" id="player-cards"></div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="btn-new" onclick="startGame()">New Game</button>
+            <button id="btn-hit" onclick="hit()" disabled>Hit</button>
+            <button id="btn-stand" onclick="stand()" disabled>Stand</button>
+        </div>
+    </div>
+    <script src="{{ url_for('web.static', filename='script.js') }}"></script>
+</body>
+
+</html>
