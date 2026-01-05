@@ -9,10 +9,14 @@
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='header-styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
     <div id="welcome-overlay" class="welcome-overlay">
         <div class="welcome-content">
             <h1 class="glitch-text">BLACKJACK <span class="gold-accent">PRO</span></h1>
@@ -28,7 +32,49 @@
 
     <div class="container" id="main-container" style="opacity: 0; pointer-events: none;">
         <header class="luxury-header">
-            <div class="logo">BJ <span class="gold-accent">PRO</span></div>
+            <div class="header-left">
+                <div class="logo">BJ <span class="gold-accent">PRO</span></div>
+            </div>
+
+            <div class="header-center">
+                <div class="session-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Balance</span>
+                        <span class="stat-value" id="header-balance">$1000</span>
+                    </div>
+                    <div class="stat-divider"></div>
+                    <div class="stat-item">
+                        <span class="stat-label">Rondas</span>
+                        <span class="stat-value" id="header-rounds">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="header-right">
+                <div class="theme-switcher">
+                    <button class="theme-btn" onclick="toggleThemeMenu()" title="Cambiar Tema">
+                        🎨 <span id="current-theme-name">Midnight Casino</span>
+                    </button>
+                    <div class="theme-menu" id="theme-menu" style="display: none;">
+                        <div class="theme-option" onclick="switchTheme('midnight-casino')">
+                            <span class="theme-preview midnight"></span>
+                            <span>Midnight Casino</span>
+                        </div>
+                        <div class="theme-option" onclick="switchTheme('royal-gold')">
+                            <span class="theme-preview royal"></span>
+                            <span>Royal Gold</span>
+                        </div>
+                        <div class="theme-option" onclick="switchTheme('neon-nights')">
+                            <span class="theme-preview neon"></span>
+                            <span>Neon Nights</span>
+                        </div>
+                        <div class="theme-option" onclick="switchTheme('classic-green')">
+                            <span class="theme-preview classic"></span>
+                            <span>Classic Green</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </header>
 
         <div class="main-layout">
@@ -41,6 +87,7 @@
                         <div class="score-pill" id="dealer-score"></div>
                     </div>
 
+                    <div id="phase-banner" class="phase-banner hidden">ESPERANDO APUESTAS</div>
                     <div id="message-area" class="message-center">Prepare sus apuestas...</div>
 
                     <div id="players-container">
@@ -74,14 +121,24 @@
 
                     <div id="betting-area">
                         <div class="control-group">
-                            <label>Dificultad IA</label>
-                            <select id="diff-select" class="luxury-input">
-                                <option value="EASY">Básica (Reglas)</option>
-                                <option value="HARD" selected>Experta (RL + MC)</option>
+                            <label for="diff-select">Dificultad IA:</label>
+                            <select id="diff-select" class="neon-input">
+                                <option value="EASY">Principiante (Random)</option>
+                                <option value="MEDIUM" selected>Estándar (Basic)</option>
+                                <option value="HARD">Profesional (Counter)</option>
                             </select>
                         </div>
 
-                        <div class="chip-rack">
+                        <div class="control-group"
+                            style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
+                            <label for="auto-play-toggle" style="cursor: pointer;">🔄 Auto Nueva Ronda</label>
+                            <label class="switch">
+                                <input type="checkbox" id="auto-play-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+
+                        <div id="chip-selection" class="action-grid">
                             <div class="chip gold" onclick="addBet(10)">10</div>
                             <div class="chip gold" onclick="addBet(50)">50</div>
                             <div class="chip gold" onclick="addBet(100)">100</div>
@@ -108,6 +165,8 @@
                                 style="display: none;">Seguro</button>
                         </div>
                         <button class="game-btn outline" id="btn-withdraw" onclick="withdraw()">Retirarse</button>
+                        <button class="primary-btn gold-btn full-width" id="btn-new-round" onclick="resetToBetting()"
+                            style="display: none; margin-top: 15px;">Jugar Nueva Ronda</button>
                     </div>
                 </div>
 
@@ -238,8 +297,29 @@
                 </div>
             </div>
         </div>
+
+        <div id="bankruptcy-modal" class="modal-overlay hidden"
+            style="display: none; justify-content: center; align-items: center;">
+            <div class="modal-content glass-panel"
+                style="max-width: 400px; text-align: center; border: 2px solid var(--accent-red);">
+                <h2 class="modal-title" style="color: var(--accent-red);">📉 ¡BANCARROTA!</h2>
+                <p>Te has quedado sin fichas. La casa invita esta vez.</p>
+                <div style="font-size: 3rem; margin: 20px 0;">💸</div>
+                <button class="modal-close-btn" onclick="refillBalance()"
+                    style="background: var(--gold-primary); color: #000; width: 100%;">Aceptar Regalo ($1000)</button>
+            </div>
+        </div>
+
     </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script src="{{ url_for('static', filename='ux-enhancements.js') }}"></script>
+    <script src="{{ url_for('static', filename='theme-switcher.js') }}"></script>
+    <script>
+        // Initialize UX enhancements when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initUXEnhancements();
+        });
+    </script>
 </body>
 
 </html>

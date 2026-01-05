@@ -3,17 +3,119 @@
    IC-3002 Analytics of Algorithms Project
 */
 
+/* Theme System - Multiple Visual Themes */
 :root {
+    /* Default Theme: Midnight Casino (Dark) */
     --bg-deep: #05050a;
     --bg-card: rgba(20, 20, 40, 0.85);
+    --bg-surface: rgba(30, 30, 50, 0.9);
     --gold-primary: #c5a059;
     --gold-bright: #f1c40f;
     --accent-red: #e94560;
     --accent-blue: #4d94ff;
+    --accent-green: #4ade80;
     --text-main: #ecf0f1;
     --text-dim: #bdc3c7;
+    --text-muted: #7f8c8d;
     --border-luxury: 1px solid rgba(197, 160, 89, 0.3);
     --shadow-elite: 0 15px 35px rgba(0, 0, 0, 0.6);
+    --table-felt: #1a5c3a;
+    --card-bg: #ffffff;
+    --card-text: #000000;
+}
+
+/* Royal Gold Theme (Light) */
+[data-theme="royal-gold"] {
+    --bg-deep: #faf8f3;
+    --bg-card: rgba(255, 253, 245, 0.95);
+    --bg-surface: rgba(250, 245, 235, 0.95);
+    --gold-primary: #d4af37;
+    --gold-bright: #ffd700;
+    --accent-red: #dc2626;
+    --accent-blue: #2563eb;
+    --accent-green: #16a34a;
+    --text-main: #1a1a1a;
+    --text-dim: #4a4a4a;
+    --text-muted: #6b7280;
+    --border-luxury: 1px solid rgba(212, 175, 55, 0.4);
+    --shadow-elite: 0 10px 25px rgba(0, 0, 0, 0.15);
+    --table-felt: #2d6a4f;
+    --card-bg: #ffffff;
+    --card-text: #000000;
+}
+
+/* Neon Nights Theme (Cyberpunk) */
+[data-theme="neon-nights"] {
+    --bg-deep: #0a0e27;
+    --bg-card: rgba(15, 20, 45, 0.9);
+    --bg-surface: rgba(20, 25, 50, 0.9);
+    --gold-primary: #00ff9f;
+    --gold-bright: #39ff14;
+    --accent-red: #ff006e;
+    --accent-blue: #00d9ff;
+    --accent-green: #00ff9f;
+    --text-main: #e0e7ff;
+    --text-dim: #a5b4fc;
+    --text-muted: #6366f1;
+    --border-luxury: 1px solid rgba(0, 255, 159, 0.5);
+    --shadow-elite: 0 0 30px rgba(0, 255, 159, 0.3);
+    --table-felt: #1e1b4b;
+    --card-bg: #1e293b;
+    --card-text: #00ff9f;
+}
+
+/* Classic Green Theme (Traditional Casino) */
+[data-theme="classic-green"] {
+    --bg-deep: #1a3a1a;
+    --bg-card: rgba(30, 60, 30, 0.9);
+    --bg-surface: rgba(40, 70, 40, 0.9);
+    --gold-primary: #ffd700;
+    --gold-bright: #ffed4e;
+    --accent-red: #ff4444;
+    --accent-blue: #4488ff;
+    --accent-green: #44ff44;
+    --text-main: #ffffff;
+    --text-dim: #cccccc;
+    --text-muted: #999999;
+    --border-luxury: 1px solid rgba(255, 215, 0, 0.3);
+    --shadow-elite: 0 10px 30px rgba(0, 0, 0, 0.5);
+    --table-felt: #0d5c2d;
+    --card-bg: #ffffff;
+    --card-text: #000000;
+}
+
+/* Smooth theme transitions */
+* {
+    transition: background-color 0.5s ease, color 0.5s ease, border-color 0.5s ease, box-shadow 0.5s ease;
+}
+
+/* Spacing & Sizing System */
+:root {
+    /* Spacing Scale */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 32px;
+    --space-2xl: 48px;
+
+    /* Border Radius */
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+
+    /* Font Sizes */
+    --text-xs: 0.75rem;
+    --text-sm: 0.875rem;
+    --text-md: 1rem;
+    --text-lg: 1.25rem;
+    --text-xl: 1.5rem;
+    --text-2xl: 2rem;
+
+    /* Layout Widths */
+    --sidebar-width: 280px;
+    --max-content-width: 1400px;
 }
 
 * {
@@ -251,6 +353,55 @@ body {
     padding: 25px;
     border-radius: 25px;
     backdrop-filter: blur(15px);
+}
+
+/* Alerts */
+.message-center {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--gold-bright);
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    min-height: 2em;
+    margin: 15px 0;
+    transition: all 0.3s ease;
+}
+
+/* Modal Styling */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 2000;
+    display: none;
+    /* Flex when active */
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(8px);
+}
+
+.modal-content {
+    background: var(--glass-bg);
+    border: 2px solid var(--gold-primary);
+    padding: 30px;
+    border-radius: 20px;
+    max-width: 500px;
+    width: 90%;
+    position: relative;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+    transform: translateY(20px);
+    animation: modalSlideUp 0.4s forwards;
+}
+
+.modal-title {
+    font-family: 'Outfit', sans-serif;
+    color: var(--gold-bright);
+    margin-bottom: 20px;
+    font-size: 2rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
 }
 
 .insight-meta {
@@ -495,6 +646,63 @@ body {
     font-size: 0.9rem;
 }
 
+/* 3D Card Styles */
+.card-container {
+    width: 90px;
+    height: 126px;
+    perspective: 1000px;
+    position: absolute;
+    /* Needed for animation placement */
+    transform-style: preserve-3d;
+}
+
+.card-face {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    backface-visibility: hidden;
+    border-radius: 6px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    font-weight: bold;
+    background: white;
+}
+
+.card-front {
+    transform: rotateY(180deg);
+    background-color: white;
+}
+
+.card-front.red {
+    color: #e74c3c;
+}
+
+.card-front.black {
+    color: #2c3e50;
+}
+
+.card-back {
+    transform: rotateY(0deg);
+    background: repeating-linear-gradient(45deg,
+            #1a472a,
+            #1a472a 5px,
+            #2d5c3d 5px,
+            #2d5c3d 10px);
+    border: 2px solid #fff;
+}
+
+/* Flipped state handled by rotation of container */
+.card-container.flipped {
+    /* transform: rotateY(180deg); This would be handled by JS animation usually, 
+       but if we use class based toggling: */
+}
+
+/* Log Badges */
 .log-badge {
     padding: 2px 8px;
     border-radius: 4px;
@@ -709,4 +917,467 @@ body {
 .leaderboard-table tbody tr:nth-child(3) td:first-child {
     color: #CD7F32;
     font-weight: 700;
+}
+
+/* Toast Notifications */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.toast {
+    background: linear-gradient(135deg, rgba(20, 30, 48, 0.95), rgba(30, 40, 60, 0.95));
+    border: 1px solid var(--gold-primary);
+    border-radius: 12px;
+    padding: 16px 20px;
+    min-width: 300px;
+    max-width: 400px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(197, 164, 89, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    pointer-events: all;
+    animation: toastSlideIn 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    position: relative;
+    overflow: hidden;
+}
+
+.toast::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 4px;
+    background: var(--gold-primary);
+}
+
+.toast.success::before {
+    background: #4ade80;
+}
+
+.toast.error::before {
+    background: #f87171;
+}
+
+.toast.info::before {
+    background: #60a5fa;
+}
+
+.toast-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 4px;
+    color: var(--gold-primary);
+}
+
+.toast.success .toast-title {
+    color: #4ade80;
+}
+
+.toast.error .toast-title {
+    color: #f87171;
+}
+
+.toast-message {
+    font-size: 0.85rem;
+    color: #ccc;
+    line-height: 1.4;
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.toast-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+@keyframes toastSlideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.toast.removing {
+    animation: toastSlideOut 0.3s ease-out forwards;
+}
+
+@keyframes toastSlideOut {
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* Smooth Transitions for Game States */
+.fade-in {
+    animation: fadeIn 0.5s ease-in;
+}
+
+.fade-out {
+    animation: fadeOut 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+.slide-up {
+    animation: slideUp 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Ripple Effect for Buttons */
+.ripple {
+    position: relative;
+    overflow: hidden;
+}
+
+.ripple::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.ripple:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* Pulse Animation for Active Elements */
+.pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(197, 164, 89, 0.7);
+    }
+
+    50% {
+        box-shadow: 0 0 0 10px rgba(197, 164, 89, 0);
+    }
+}
+
+/* Glow Effect for New Cards */
+.card-glow {
+    animation: cardGlow 1s ease-out;
+}
+
+@keyframes cardGlow {
+    0% {
+        box-shadow: 0 0 20px rgba(197, 164, 89, 0.8);
+    }
+
+    100% {
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+}
+
+/* Shake Animation for Invalid Actions */
+.shake {
+    animation: shake 0.5s;
+    animation-iteration-count: 1;
+}
+
+@keyframes shake {
+    0% {
+        transform: translate(1px, 1px) rotate(0deg);
+    }
+
+    10% {
+        transform: translate(-1px, -2px) rotate(-1deg);
+    }
+
+    20% {
+        transform: translate(-3px, 0px) rotate(1deg);
+    }
+
+    30% {
+        transform: translate(3px, 2px) rotate(0deg);
+    }
+
+    40% {
+        transform: translate(1px, -1px) rotate(1deg);
+    }
+
+    50% {
+        transform: translate(-1px, 2px) rotate(-1deg);
+    }
+
+    60% {
+        transform: translate(-3px, 1px) rotate(0deg);
+    }
+
+    70% {
+        transform: translate(3px, 1px) rotate(-1deg);
+    }
+
+    80% {
+        transform: translate(-1px, -1px) rotate(1deg);
+    }
+
+    90% {
+        transform: translate(1px, 2px) rotate(0deg);
+    }
+
+    100% {
+        transform: translate(1px, -2px) rotate(-1deg);
+    }
+}
+
+/* Switch Toggle */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.1);
+    -webkit-transition: .4s;
+    transition: .4s;
+    border: 1px solid var(--gold-primary);
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 16px;
+    width: 16px;
+    left: 4px;
+    bottom: 3px;
+    background-color: var(--gold-dim);
+    -webkit-transition: .4s;
+    transition: .4s;
+}
+
+input:checked+.slider {
+    background-color: rgba(212, 175, 55, 0.2);
+}
+
+input:checked+.slider:before {
+    -webkit-transform: translateX(26px);
+    -ms-transform: translateX(26px);
+    transform: translateX(26px);
+    background-color: var(--gold-bright);
+    box-shadow: 0 0 10px var(--gold-bright);
+}
+
+.slider.round {
+    border-radius: 34px;
+}
+
+.slider.round:before {
+    border-radius: 50%;
+}
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    10%,
+    30%,
+    50%,
+    70%,
+    90% {
+        transform: translateX(-5px);
+    }
+
+    20%,
+    40%,
+    60%,
+    80% {
+        transform: translateX(5px);
+    }
+}
+
+/* Tooltip Styles */
+.tooltip {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    background-color: rgba(20, 30, 48, 0.95);
+    color: var(--gold-primary);
+    text-align: center;
+    border-radius: 8px;
+    padding: 8px 12px;
+    position: absolute;
+    z-index: 1000;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    opacity: 0;
+    transition: opacity 0.3s, visibility 0.3s;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    border: 1px solid var(--gold-primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.tooltip .tooltiptext::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--gold-primary) transparent transparent transparent;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(197, 164, 89, 0.3);
+    border-radius: 50%;
+    border-top-color: var(--gold-primary);
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Phase Banner */
+.phase-banner {
+    position: absolute;
+    top: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 40px;
+    background: rgba(0, 0, 0, 0.85);
+    border: 2px solid var(--gold-primary);
+    color: var(--gold-bright);
+    font-size: 1.5rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    z-index: 100;
+    border-radius: 5px;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+.phase-banner.hidden {
+    opacity: 0;
+}
+
+/* Active Turn Highlight */
+.hand-section {
+    transition: all 0.3s ease;
+    border-radius: 20px;
+    padding: 20px;
+}
+
+.hand-section.active-turn {
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+    border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+.dealer-section.active-turn {
+    box-shadow: 0 0 30px rgba(231, 76, 60, 0.2);
+    border-color: rgba(231, 76, 60, 0.4);
 }

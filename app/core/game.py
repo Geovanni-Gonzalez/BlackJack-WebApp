@@ -388,6 +388,7 @@ class BlackJackGame:
             'count': self.counter.running_count,
             'suggestion': self.counter.get_suggestion(),
             'game_over': self.game_over,
+            'waiting_for_bets': self.waiting_for_bets,
             'message': self.message,
             'stats': self.stats,
             'decision_history': self.decision_history

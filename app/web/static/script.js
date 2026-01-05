@@ -78,14 +78,23 @@ function playSound(type) {
 }
 
 async function fetchData(url, data = null, method = 'POST') {
+    console.log(`[API REQUEST] ${method} ${url}`, data);
     const options = { method: method };
     if (data) {
         options.headers = { 'Content-Type': 'application/json' };
         options.body = JSON.stringify(data);
     }
-    const response = await fetch(url, options);
-    return response.json();
+    try {
+        const response = await fetch(url, options);
+        const json = await response.json();
+        console.log(`[API RESPONSE] ${url}:`, json);
+        return json;
+    } catch (e) {
+        console.error(`[API ERROR] ${url}:`, e);
+        return null;
+    }
 }
+
 
 function enterCasino() {
     const overlay = document.getElementById('welcome-overlay');
@@ -150,12 +159,42 @@ async function saveToLeaderboard() {
     }
 }
 
+// Update Header Stats Display
+function updateHeaderStats(state) {
+    const balanceEl = document.getElementById('header-balance');
+    const roundsEl = document.getElementById('header-rounds');
+
+    if (balanceEl && state.players && state.players.length > 0) {
+        const balance = state.players[0].balance;
+        balanceEl.textContent = `$${balance}`;
+
+        // Add color coding based on profit/loss
+        if (balance > 1000) {
+            balanceEl.style.color = 'var(--accent-green)';
+        } else if (balance < 1000) {
+            balanceEl.style.color = 'var(--accent-red)';
+        } else {
+            balanceEl.style.color = 'var(--gold-primary)';
+        }
+    }
+
+    if (roundsEl && state.stats) {
+        roundsEl.textContent = state.stats.rounds_played || 0;
+    }
+}
+
 async function updateUI(state) {
+    if (!state) { console.error("[UI] Received null state"); return; }
+    console.log(`[UI UPDATE] Phase: ${state.waiting_for_bets ? 'BETTING' : (state.game_over ? 'GAME_OVER' : 'PLAYING')}`, state);
+
     current_state = state;
 
     // Phase Visibility & Messaging
     const messageArea = document.getElementById('message-area');
     messageArea.innerText = state.message;
+
+    // Update Header Stats
+    updateHeaderStats(state);
 
     // Trigger Effects
     const currentRoundID = state.stats.rounds_played;
@@ -173,7 +212,7 @@ async function updateUI(state) {
 
     // Sidebar & Betting
     document.getElementById('betting-area').style.display = state.waiting_for_bets ? 'block' : 'none';
-    document.getElementById('game-actions').style.display = (!state.waiting_for_bets && !state.game_over) ? 'grid' : 'none';
+    document.getElementById('game-actions').style.display = state.waiting_for_bets ? 'none' : 'grid';
 
     // Stats
     document.getElementById('stat-rounds').innerText = state.stats.rounds_played;
@@ -190,16 +229,20 @@ async function updateUI(state) {
         updateChart(state.players[0].balance);
     }
 
-    // Advice
+    // Advice & AI Brains Update
     if (!state.game_over && !state.waiting_for_bets && state.players[state.current_player_idx].owner === "Human") {
         updateAdvice();
     } else {
+        // Clear advice but keep Q-values updating for observation if needed or reset
         document.getElementById('ai-advice').innerText = "Esperando turno...";
         document.getElementById('prob-hit').innerText = "0%";
         document.getElementById('prob-stand').innerText = "0%";
     }
+    // Always try to update Q-values to show current state analysis
+    updateQValues();
 
     renderEliteLog(state.decision_history);
+    updatePhaseBanner(state);
 
     // Dealer
     if (state.waiting_for_bets) {
@@ -222,7 +265,7 @@ async function updateUI(state) {
         const handWrapper = document.createElement('div');
         handWrapper.className = 'hand-section';
         if (idx === state.current_player_idx && !state.game_over && !state.waiting_for_bets) {
-            handWrapper.classList.add('active-turn-glow');
+            handWrapper.classList.add('active-turn');
         }
 
         const playerName = player.owner === 'Human' ? 'Tú' : player.owner;
@@ -243,7 +286,23 @@ async function updateUI(state) {
 }
 
 function updateInteractionControls(state) {
-    if (state.game_over || state.waiting_for_bets) return;
+    if (state.waiting_for_bets) return;
+
+    // If game is over, disable all buttons
+    // If game is over, disable all buttons and show New Round
+    if (state.game_over) {
+        document.getElementById('btn-hit').disabled = true;
+        document.getElementById('btn-stand').disabled = true;
+        document.getElementById('btn-double').disabled = true;
+        document.getElementById('btn-withdraw').disabled = true;
+        document.getElementById('btn-split').style.display = 'none';
+        document.getElementById('btn-insurance').style.display = 'none';
+        document.getElementById('btn-new-round').style.display = 'block';
+        return;
+    }
+
+    document.getElementById('btn-new-round').style.display = 'none';
+
     const currentPlayer = state.players[state.current_player_idx];
     const isHuman = currentPlayer.owner === "Human";
 
@@ -255,7 +314,10 @@ function updateInteractionControls(state) {
     const btnSplit = document.getElementById('btn-split');
     const btnInsurance = document.getElementById('btn-insurance');
     btnSplit.style.display = (isHuman && currentPlayer.cards.length === 2 && currentPlayer.cards[0].rank === currentPlayer.cards[1].rank) ? 'inline-block' : 'none';
-    btnInsurance.style.display = (isHuman && currentPlayer.cards.length === 2 && state.dealer_hand.cards[1].rank === 'A' && !currentPlayer.is_insurance) ? 'inline-block' : 'none';
+
+    // Safe check for dealer's second card (insurance only available if dealer shows Ace)
+    const dealerHasAce = state.dealer_hand && state.dealer_hand.cards && state.dealer_hand.cards.length >= 2 && state.dealer_hand.cards[1] && state.dealer_hand.cards[1].rank === 'A';
+    btnInsurance.style.display = (isHuman && currentPlayer.cards.length === 2 && dealerHasAce && !currentPlayer.is_insurance) ? 'inline-block' : 'none';
 }
 
 function renderEliteLog(history) {
@@ -275,11 +337,23 @@ function renderEliteLog(history) {
 }
 
 async function updateAdvice() {
-    const data = await fetchData('/api/probability', null, 'GET');
-    document.getElementById('ai-advice').innerHTML = `<strong>Sugerencia:</strong> ${data.recommendation}`;
-    document.getElementById('prob-hit').innerText = (data.hit_win_rate * 100).toFixed(1) + "%";
-    document.getElementById('prob-stand').innerText = (data.stand_win_rate * 100).toFixed(1) + "%";
-    updateQValues(); // Fetch Q-values alongside probability
+    try {
+        const data = await fetchData('/api/probability', null, 'GET');
+
+        if (!data || !data.recommendation) {
+            document.getElementById('ai-advice').innerHTML = `<strong>Sugerencia:</strong> Esperando mano...`;
+            document.getElementById('prob-hit').innerText = "-";
+            document.getElementById('prob-stand').innerText = "-";
+        } else {
+            document.getElementById('ai-advice').innerHTML = `<strong>Sugerencia:</strong> ${data.recommendation}`;
+            document.getElementById('prob-hit').innerText = (data.hit_win_rate * 100).toFixed(1) + "%";
+            document.getElementById('prob-stand').innerText = (data.stand_win_rate * 100).toFixed(1) + "%";
+        }
+
+        updateQValues(); // Fetch Q-values alongside probability
+    } catch (e) {
+        console.warn("Could not fetch advice", e);
+    }
 }
 
 async function updateQValues() {
@@ -342,8 +416,8 @@ function renderHand(elementId, cards, flipped = true) {
         const shoeRect = shoe.getBoundingClientRect();
         const cardRect = cardCont.getBoundingClientRect();
         cardCont.animate([
-            { transform: `translate(${shoeRect.left - cardRect.left}px, ${shoeRect.top - cardRect.top}px) rotate(-45deg) scale(0.1)`, opacity: 0 },
-            { transform: 'translate(0, 0) rotate(180deg) scale(1)', opacity: 1 }
+            { transform: `translate(${shoeRect.left - cardRect.left}px, ${shoeRect.top - cardRect.top}px) rotateY(0deg) scale(0.1)`, opacity: 0 },
+            { transform: 'translate(0, 0) rotateY(180deg) scale(1)', opacity: 1 }
         ], { duration: 600, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' });
         playSound('deal');
     });
@@ -448,4 +522,153 @@ function initParallax() {
         const y = (e.clientY / window.innerHeight - 0.5) * 10; // Max 5deg up/down
         board.style.transform = `perspective(1200px) rotateX(${15 - y}deg) rotateY(${x}deg)`;
     });
+}
+
+async function resetToBetting() {
+    console.log("[UI] Resetting for new round...");
+
+    // Call backend to reset game state
+    const state = await fetchData('/api/start', { num_ai: 2, difficulty: 'HARD' });
+
+    if (state) {
+        updateUI(state);
+    }
+
+    // Reset local state vars if needed
+    document.getElementById('game-actions').style.display = 'none';
+    document.getElementById('betting-area').style.display = 'block';
+    document.getElementById('message-area').innerText = "";
+
+    // Reset buttons for next game
+    document.getElementById('btn-hit').disabled = false;
+    document.getElementById('btn-stand').disabled = false;
+    document.getElementById('btn-double').disabled = false;
+    document.getElementById('btn-withdraw').disabled = false;
+    document.getElementById('btn-new-round').style.display = 'none';
+
+    // Reset visuals
+    cleanupTable();
+    const dealerScore = document.getElementById('dealer-score');
+    if (dealerScore) dealerScore.innerText = "";
+
+    // Update advice to waiting state
+    document.getElementById('ai-advice').innerHTML = `<strong>Sugerencia:</strong> Esperando mano...`;
+    document.getElementById('prob-hit').innerText = "-";
+    document.getElementById('prob-stand').innerText = "-";
+}
+
+function updatePhaseBanner(state) {
+    const banner = document.getElementById('phase-banner');
+    if (!banner) return;
+
+    banner.classList.remove('hidden');
+
+    if (state.waiting_for_bets) {
+        banner.innerText = "FASE DE APUESTAS";
+        banner.style.color = "var(--gold-bright)";
+        banner.style.borderColor = "var(--gold-primary)";
+    } else if (state.game_over) {
+        if (state.message && state.message.includes("WIN")) {
+            banner.innerText = "¡VICTORIA!";
+            banner.style.color = "#2ecc71";
+            banner.style.borderColor = "#2ecc71";
+        } else if (state.message && state.message.includes("LOSS")) {
+            banner.innerText = "DERROTA";
+            banner.style.color = "#e74c3c";
+            banner.style.borderColor = "#e74c3c";
+        } else {
+            banner.innerText = "PARTIDA FINALIZADA";
+            banner.style.color = "#fff";
+            banner.style.borderColor = "#fff";
+        }
+    } else {
+        // Playing
+        const currentPlayer = state.players[state.current_player_idx];
+        if (currentPlayer && currentPlayer.owner === "Human") {
+            banner.innerText = "TU TURNO";
+            banner.style.color = "#3498db";
+            banner.style.borderColor = "#3498db";
+        } else {
+            const owner = currentPlayer ? currentPlayer.owner : "DEALER";
+            banner.innerText = `TURNO DE ${owner}`;
+            banner.style.color = "#f1c40f";
+            banner.style.borderColor = "#f1c40f";
+        }
+    }
+
+    // Check for Bankruptcy
+    if (state.waiting_for_bets && state.players && state.players[0].balance <= 0) {
+        document.getElementById('bankruptcy-modal').style.display = 'flex';
+    }
+}
+
+playSound('win'); // Satisfying sound for new money
+
+// Auto-Play Logic
+let autoPlayActive = false;
+let autoPlayTimer = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const toggle = document.getElementById('auto-play-toggle');
+    if (toggle) {
+        toggle.addEventListener('change', (e) => {
+            autoPlayActive = e.target.checked;
+            if (!autoPlayActive && autoPlayTimer) {
+                clearTimeout(autoPlayTimer);
+                autoPlayTimer = null;
+                showToast("Auto-Juego Desactivado");
+            } else if (autoPlayActive) {
+                showToast("Auto-Juego Activado");
+                // If game is already over, trigger immediate restart
+                if (current_state && current_state.game_over) {
+                    triggerAutoRestart();
+                }
+            }
+        });
+    }
+});
+
+function triggerAutoRestart() {
+    if (!autoPlayActive) return;
+
+    showToast("Nueva ronda en 3s...");
+
+    autoPlayTimer = setTimeout(() => {
+        if (autoPlayActive) {
+            resetToBetting();
+        }
+    }, 3000);
+}
+
+// Hook into updateUI to catch Game Over
+const originalUpdateUI = updateUI;
+updateUI = async function (state) {
+    await originalUpdateUI(state);
+
+    if (state.game_over && autoPlayActive && !state.waiting_for_bets) {
+        // Did we just win/lose?
+        if (autoPlayTimer) clearTimeout(autoPlayTimer);
+        triggerAutoRestart();
+    }
+};
+
+function showToast(message) {
+    const toast = document.createElement('div');
+    toast.className = 'message-center';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '20px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.background = 'rgba(0,0,0,0.8)';
+    toast.style.padding = '10px 30px';
+    toast.style.border = '1px solid var(--gold-primary)';
+    toast.style.borderRadius = '50px';
+    toast.style.zIndex = '3000';
+    toast.innerText = message;
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 500);
+    }, 2500);
 }

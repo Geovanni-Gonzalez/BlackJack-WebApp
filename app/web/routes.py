@@ -31,6 +31,7 @@ def index():
 
 @web_bp.route('/api/start', methods=['POST'])
 def start_game():
+    print("\n[BACKEND] -> POST /api/start")
     data = request.get_json() or {}
     num_ai = data.get('num_ai', 2)
     difficulty = data.get('difficulty', 'HARD')
@@ -51,6 +52,7 @@ def start_game():
 
 @web_bp.route('/api/bet', methods=['POST'])
 def place_bet():
+    print("\n[BACKEND] -> POST /api/bet")
     data = request.get_json()
     amount = data.get('amount', 10)
     # Human is always index 0
@@ -78,19 +80,29 @@ def insurance():
 
 @web_bp.route('/api/hit', methods=['POST'])
 def hit():
+    print("\n[BACKEND] -> POST /api/hit")
     game_instance.player_hit()
     sync_player_db()
     return jsonify(game_instance.get_state())
 
 @web_bp.route('/api/stand', methods=['POST'])
 def stand():
+    print("\n[BACKEND] -> POST /api/stand")
     game_instance.player_stand()
     sync_player_db()
     return jsonify(game_instance.get_state())
 
 @web_bp.route('/api/withdraw', methods=['POST'])
-def withdraw():
-    game_instance.player_withdraw()
+def withdraw_game():
+    game_instance.players[0].withdrawn = True
+    game_instance.check_game_over()
+    return jsonify(game_instance.get_state())
+
+@web_bp.route('/api/refill', methods=['POST'])
+def refill_balance():
+    print("\n[BACKEND] -> POST /api/refill")
+    # Reset human balance
+    game_instance.players[0].balance = 1000
     sync_player_db()
     return jsonify(game_instance.get_state())
 
@@ -189,3 +201,58 @@ def save_leaderboard():
         print(f"Leaderboard Save Error: {e}")
         db.session.rollback()
         return jsonify({'success': False, 'message': str(e)})
+
+@web_bp.route('/api/strategy/heatmap', methods=['GET'])
+def get_strategy_heatmap():
+    """Returns the Q-Learning strategy heatmap for visualization."""
+    try:
+        from app.ai.qlearning import QLearningAgent
+        agent = QLearningAgent()
+        
+        heatmap = agent.generate_strategy_heatmap()
+        
+        return jsonify({
+            'heatmap': heatmap,
+            'rows': list(range(4, 22)),  # Player sums
+            'cols': list(range(2, 12)),  # Dealer cards
+            'legend': {
+                0: 'Stand',
+                1: 'Hit',
+                2: 'Equal'
+            }
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@web_bp.route('/api/strategy/details', methods=['GET'])
+def get_strategy_details():
+    """Returns detailed Q-values for a specific state."""
+    try:
+        player_sum = int(request.args.get('player_sum', 15))
+        dealer_card = int(request.args.get('dealer_card', 10))
+        
+        from app.ai.qlearning import QLearningAgent
+        agent = QLearningAgent()
+        
+        details = agent.get_strategy_details(player_sum, dealer_card)
+        
+        return jsonify({
+            'player_sum': player_sum,
+            'dealer_card': dealer_card,
+            'details': details
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@web_bp.route('/api/strategy/compare', methods=['GET'])
+def compare_strategies():
+    """Compares Q-Learning strategy with basic Blackjack strategy."""
+    try:
+        from app.ai.qlearning import QLearningAgent
+        agent = QLearningAgent()
+        
+        comparison = agent.compare_with_basic_strategy()
+        
+        return jsonify(comparison)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
