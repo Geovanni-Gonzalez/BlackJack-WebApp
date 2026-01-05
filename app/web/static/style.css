@@ -161,6 +161,7 @@ body {
     margin-bottom: 10px;
     background: linear-gradient(to bottom, #fff 0%, var(--gold-primary) 100%);
     -webkit-background-clip: text;
+    background-clip: text;
     -webkit-text-fill-color: transparent;
 }
 
@@ -431,7 +432,6 @@ body {
     font-size: 1.1rem;
     font-style: italic;
     color: #fff;
-    max-width: 60%;
 }
 
 .prob-visualization {
@@ -697,10 +697,7 @@ body {
 }
 
 /* Flipped state handled by rotation of container */
-.card-container.flipped {
-    /* transform: rotateY(180deg); This would be handled by JS animation usually, 
-       but if we use class based toggling: */
-}
+
 
 /* Log Badges */
 .log-badge {
@@ -1254,7 +1251,6 @@ input:checked+.slider:before {
 
 .slider.round:before {
     border-radius: 50%;
-}
 }
 
 @keyframes shake {
