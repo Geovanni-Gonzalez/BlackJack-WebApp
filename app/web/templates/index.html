@@ -133,6 +133,30 @@
                     </div>
                 </div>
 
+                <div class="side-card qvalue-panel luxury-border">
+                    <h3>🧠 AI Brain (Q-Values)</h3>
+                    <div class="qvalue-display">
+                        <div class="qvalue-bar">
+                            <label>Q(Stand)</label>
+                            <div class="qvalue-gauge">
+                                <div class="qvalue-fill" id="q-stand-fill" style="width: 50%;"></div>
+                            </div>
+                            <span id="q-stand-value">0.000</span>
+                        </div>
+                        <div class="qvalue-bar">
+                            <label>Q(Hit)</label>
+                            <div class="qvalue-gauge">
+                                <div class="qvalue-fill" id="q-hit-fill" style="width: 50%;"></div>
+                            </div>
+                            <span id="q-hit-value">0.000</span>
+                        </div>
+                        <div class="qvalue-recommendation">
+                            <small>RL Optimal:</small>
+                            <span id="q-optimal">-</span>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="side-card chart-panel luxury-border">
                     <h3>Análisis de Saldo</h3>
                     <div class="chart-box">
@@ -151,6 +175,7 @@
             </div>
             <div class="footer-actions">
                 <button class="ghost-btn" onclick="toggleManual()">📖 Manual Técnico & Guía IC-3002</button>
+                <button class="ghost-btn" onclick="toggleLeaderboard()">🏆 Hall of Fame</button>
             </div>
         </section>
 
@@ -179,6 +204,37 @@
                         <p>El sistema mide la "Precisión Estratégica" comparando cada decisión del usuario y la IA
                             contra la jugada óptima calculada por el simulador MC.</p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Leaderboard Modal -->
+        <div id="leaderboard-modal" class="modal" style="display: none;">
+            <div class="modal-content professional-theme">
+                <span class="close-btn" onclick="toggleLeaderboard()">&times;</span>
+                <div class="doc-header">
+                    <h2>🏆 Hall of Fame</h2>
+                    <p>Top 10 Mejores Sesiones</p>
+                </div>
+                <div class="doc-body">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Jugador</th>
+                                <th>Saldo Máximo</th>
+                                <th>Rondas</th>
+                                <th>Win Rate</th>
+                                <th>Precisión</th>
+                                <th>Fecha</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboard-body">
+                            <tr>
+                                <td colspan="7">Cargando...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

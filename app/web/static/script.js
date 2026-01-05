@@ -101,6 +101,55 @@ function toggleManual() {
     modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
 }
 
+async function toggleLeaderboard() {
+    const modal = document.getElementById('leaderboard-modal');
+    const isOpening = modal.style.display === 'none';
+    modal.style.display = isOpening ? 'flex' : 'none';
+
+    if (isOpening) {
+        await loadLeaderboard();
+    }
+}
+
+async function loadLeaderboard() {
+    try {
+        const data = await fetchData('/api/leaderboard', null, 'GET');
+        const tbody = document.getElementById('leaderboard-body');
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No hay entradas aún. ¡Sé el primero!</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.map((entry, idx) => `
+            <tr>
+                <td>${idx + 1}</td>
+                <td>${entry.player_name}</td>
+                <td>$${entry.peak_balance}</td>
+                <td>${entry.rounds_played}</td>
+                <td>${entry.win_rate}%</td>
+                <td>${entry.player_accuracy}%</td>
+                <td>${entry.achieved_at}</td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading leaderboard:', error);
+        document.getElementById('leaderboard-body').innerHTML =
+            '<tr><td colspan="7" style="text-align:center;">Error al cargar el Hall of Fame</td></tr>';
+    }
+}
+
+async function saveToLeaderboard() {
+    try {
+        const result = await fetchData('/api/leaderboard', {}, 'POST');
+        if (result.success) {
+            alert(result.message);
+        }
+    } catch (error) {
+        console.error('Error saving to leaderboard:', error);
+    }
+}
+
 async function updateUI(state) {
     current_state = state;
 
@@ -230,6 +279,37 @@ async function updateAdvice() {
     document.getElementById('ai-advice').innerHTML = `<strong>Sugerencia:</strong> ${data.recommendation}`;
     document.getElementById('prob-hit').innerText = (data.hit_win_rate * 100).toFixed(1) + "%";
     document.getElementById('prob-stand').innerText = (data.stand_win_rate * 100).toFixed(1) + "%";
+    updateQValues(); // Fetch Q-values alongside probability
+}
+
+async function updateQValues() {
+    try {
+        const data = await fetchData('/api/qvalues', null, 'GET');
+
+        // Handle game over or waiting states
+        if (!data || data.state === null || data.state === 'None') {
+            document.getElementById('q-stand-value').innerText = '0.000';
+            document.getElementById('q-hit-value').innerText = '0.000';
+            document.getElementById('q-stand-fill').style.width = '50%';
+            document.getElementById('q-hit-fill').style.width = '50%';
+            document.getElementById('q-optimal').innerText = 'Esperando...';
+            return;
+        }
+
+        // Normalize Q-values to 0-100% for gauge display
+        const maxQ = Math.max(Math.abs(data.q_stand), Math.abs(data.q_hit), 1);
+        const standPercent = ((data.q_stand + maxQ) / (2 * maxQ)) * 100;
+        const hitPercent = ((data.q_hit + maxQ) / (2 * maxQ)) * 100;
+
+        document.getElementById('q-stand-value').innerText = data.q_stand.toFixed(3);
+        document.getElementById('q-hit-value').innerText = data.q_hit.toFixed(3);
+        document.getElementById('q-stand-fill').style.width = standPercent + '%';
+        document.getElementById('q-hit-fill').style.width = hitPercent + '%';
+        document.getElementById('q-optimal').innerText = data.optimal_action || 'N/A';
+    } catch (error) {
+        console.error('Error fetching Q-values:', error);
+        document.getElementById('q-optimal').innerText = 'Error';
+    }
 }
 
 function triggerScreenEffects(type) {
@@ -356,4 +436,16 @@ window.onload = async () => {
     initChart();
     const state = await fetchData('/api/start', { num_ai: 2, difficulty: 'HARD' });
     updateUI(state);
+    initParallax();
 };
+
+function initParallax() {
+    const board = document.getElementById('board-perspective');
+    if (!board) return;
+
+    document.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5) * 10; // Max 5deg left/right
+        const y = (e.clientY / window.innerHeight - 0.5) * 10; // Max 5deg up/down
+        board.style.transform = `perspective(1200px) rotateX(${15 - y}deg) rotateY(${x}deg)`;
+    });
+}

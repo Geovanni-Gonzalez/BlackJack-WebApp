@@ -2,7 +2,7 @@ from flask import render_template, jsonify, request, session
 from . import web_bp
 from app.core.game import BlackJackGame
 from app.ai.montecarlo import MonteCarloSimulator
-from .models import db, PlayerModel, GameSession
+from .models import db, PlayerModel, GameSession, Leaderboard
 
 # Global game instance
 game_instance = BlackJackGame()
@@ -126,3 +126,66 @@ def get_probability():
         'recommendation': 'PEDIR (Hit)' if prob_hit > prob_stand else 'PLANTARSE (Stand)',
         'reason': reason
     })
+
+@web_bp.route('/api/qvalues', methods=['GET'])
+def get_qvalues():
+    """Returns Q-Learning values for the current state to visualize AI confidence."""
+    if game_instance.game_over or game_instance.waiting_for_bets:
+        return jsonify({'q_stand': 0, 'q_hit': 0, 'state': None})
+    
+    from app.ai.qlearning import QLearningAgent
+    agent = QLearningAgent()
+    
+    current_hand = game_instance.players[game_instance.current_player_idx]
+    state = agent.get_state(game_instance, current_hand)
+    q_vals = agent.get_q_values(state)
+    
+    return jsonify({
+        'q_stand': round(q_vals[0], 3),
+        'q_hit': round(q_vals[1], 3),
+        'state': str(state),
+        'optimal_action': 'Stand' if q_vals[0] >= q_vals[1] else 'Hit'
+    })
+
+@web_bp.route('/api/leaderboard', methods=['GET'])
+def get_leaderboard():
+    """Returns top 10 leaderboard entries."""
+    entries = Leaderboard.query.order_by(Leaderboard.peak_balance.desc()).limit(10).all()
+    return jsonify([entry.to_dict() for entry in entries])
+
+@web_bp.route('/api/leaderboard', methods=['POST'])
+def save_leaderboard():
+    """Saves current session to leaderboard if it qualifies."""
+    try:
+        if not game_instance.players or len(game_instance.players) == 0:
+            return jsonify({'success': False, 'message': 'No player data'})
+        
+        player = game_instance.players[0]
+        stats = game_instance.stats
+        
+        # Calculate win rate
+        total_games = stats['player_wins'] + stats.get('ai_wins', 0)
+        win_rate = (stats['player_wins'] / total_games * 100) if total_games > 0 else 0
+        
+        # Calculate accuracies
+        ai_acc = (stats['ai_decisions_correct'] / stats['ai_decisions_total'] * 100) if stats['ai_decisions_total'] > 0 else 0
+        player_acc = (stats['player_decisions_correct'] / stats['player_decisions_total'] * 100) if stats['player_decisions_total'] > 0 else 0
+        
+        # Create leaderboard entry
+        entry = Leaderboard(
+            player_name=player.owner_name,
+            peak_balance=player.balance,
+            rounds_played=stats['rounds_played'],
+            win_rate=win_rate,
+            ai_accuracy=ai_acc,
+            player_accuracy=player_acc
+        )
+        
+        db.session.add(entry)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Entrada guardada en el Hall of Fame!'})
+    except Exception as e:
+        print(f"Leaderboard Save Error: {e}")
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
