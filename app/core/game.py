@@ -19,6 +19,11 @@ class Hand:
         self.is_insurance = False
         self.split_pair_value = None 
 
+    def __setstate__(self, state):
+        self.__dict__ = state
+        if 'is_ai' not in self.__dict__:
+            self.is_ai = False 
+
     def add_card(self, card):
         self.cards.append(card)
         self.calculate()

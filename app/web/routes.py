@@ -11,8 +11,11 @@ def index():
     if 'user_id' not in session:
         return redirect(url_for('auth.login'))
         
-    # Optional: Pass user info to template if needed
     user = PlayerModel.query.get(session['user_id'])
+    if not user:
+        session.clear()
+        return redirect(url_for('auth.login'))
+
     return render_template('index.html', user=user)
 
 @web_bp.route('/dashboard')

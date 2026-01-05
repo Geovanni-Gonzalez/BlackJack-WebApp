@@ -45,7 +45,8 @@ def start_game():
         
     user = PlayerModel.query.get(session['user_id'])
     if not user:
-        return jsonify({'error': 'User not found'}), 404
+        session.clear()
+        return jsonify({'error': 'User not found, re-login required'}), 401
         
     game.start_new_round(num_ai=num_ai, difficulty=difficulty)
     # Set player name to auth username
