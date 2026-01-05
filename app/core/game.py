@@ -71,7 +71,9 @@ class BlackJackGame:
             'player_wins': 0,
             'ai_wins': 0,
             'ai_decisions_total': 0,
-            'ai_decisions_correct': 0
+            'ai_decisions_correct': 0,
+            'player_decisions_total': 0,
+            'player_decisions_correct': 0
         }
 
     def start_new_round(self, num_ai=2, difficulty="HARD"):
@@ -146,9 +148,14 @@ class BlackJackGame:
         # Split conditions: 2 cards, same rank/value, enough balance
         if len(p.cards) == 2 and p.cards[0].rank == p.cards[1].rank and p.balance >= p.initial_bet:
             # Create new hand
+            # The balance will be synced later, so we just need to ensure the bet is correct
             new_hand = Hand(p.owner_name, balance=p.balance) 
             new_hand.is_split = True
-            new_hand.place_bet(p.initial_bet)
+            
+            # Place bet manually without deduction to avoid double-counting
+            # since _update_owner_balance will handle the global deduction
+            new_hand.current_bet = p.initial_bet
+            new_hand.initial_bet = p.initial_bet
             
             # Move one card to new hand
             card = p.cards.pop()
@@ -163,7 +170,7 @@ class BlackJackGame:
             self.players.insert(idx + 1, new_hand)
             self.message = "Hand Split! Playing first hand."
             
-            # Update parent balance (since we shared the object logic)
+            # Deduct once from the owner's global balance
             self._update_owner_balance(p.owner_name, -p.initial_bet)
             self._sync_balances()
         else:
@@ -208,15 +215,39 @@ class BlackJackGame:
         
         player = self.players[self.current_player_idx]
         if player.standing or player.withdrawn: return
-        
+
+        # Track accuracy for human player
+        if player.owner_name == "Human":
+            self._track_human_accuracy(1) # Action 1 = Hit
+
         self._deal_card_to(player)
         if player.busted:
             self.next_turn()
 
     def player_stand(self):
         if self.game_over: return
-        self.players[self.current_player_idx].standing = True
+        player = self.players[self.current_player_idx]
+        if player.owner_name == "Human":
+            self._track_human_accuracy(0) # Action 0 = Stand
+        player.standing = True
         self.next_turn()
+
+    def _track_human_accuracy(self, action):
+        """Helper to compare human move vs Monte Carlo."""
+        # This is called via HTTP before current_state is returned, 
+        # but the probability route is usually called via frontend.
+        # To be accurate, we'll run a quick simulation here.
+        from app.ai.montecarlo import MonteCarloSimulator
+        sim = MonteCarloSimulator(num_simulations=100)
+        
+        dealer_upcard = self.dealer_hand.cards[1] if len(self.dealer_hand.cards) >= 2 else None
+        if dealer_upcard:
+            p_hit = sim.simulate_hit_win_rate(self.players[0], dealer_upcard)
+            p_stand = sim.simulate_stand_win_rate(self.players[0], dealer_upcard)
+            
+            self.stats['player_decisions_total'] += 1
+            if (action == 1 and p_hit >= p_stand) or (action == 0 and p_stand > p_hit):
+                self.stats['player_decisions_correct'] += 1
 
     def player_withdraw(self):
         if self.game_over: return

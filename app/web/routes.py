@@ -106,8 +106,23 @@ def get_probability():
     prob_hit = mc_sim.simulate_hit_win_rate(current_hand, dealer_card)
     prob_stand = mc_sim.simulate_stand_win_rate(current_hand, dealer_card)
     
+    # Simple Strategy Explanation (Spanish)
+    reason = "Análisis probabilístico"
+    p_val = current_hand.value
+    d_val = dealer_card.value
+    
+    if p_val <= 11:
+        reason = "Tu mano es baja, siempre es seguro pedir."
+    elif p_val >= 17:
+        reason = "Mano fuerte, el riesgo de pasarse es muy alto."
+    elif 2 <= d_val <= 6:
+        reason = f"El Dealer tiene carta débil ({d_val}), podría pasarse."
+    elif d_val >= 7:
+        reason = f"El Dealer tiene carta fuerte ({d_val}), necesitas sumar más."
+
     return jsonify({
         'hit_win_rate': prob_hit,
         'stand_win_rate': prob_stand,
-        'recommendation': 'HIT' if prob_hit > prob_stand else 'STAND'
+        'recommendation': 'PEDIR (Hit)' if prob_hit > prob_stand else 'PLANTARSE (Stand)',
+        'reason': reason
     })

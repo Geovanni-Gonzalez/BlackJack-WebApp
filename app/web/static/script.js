@@ -1,53 +1,56 @@
 let currentBet = 10;
 let current_state = null;
+let lastRoundID = 0;
 let balanceHistory = [];
 let chart = null;
 
 function initChart() {
-    const ctx = document.getElementById('balanceChart').getContext('2d');
+    const canvas = document.getElementById('balanceChart');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
     chart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: [],
             datasets: [{
-                label: 'Human Balance ($)',
+                label: 'Balance ($)',
                 data: [],
-                borderColor: '#f1c40f',
-                backgroundColor: 'rgba(241, 196, 15, 0.1)',
-                borderWidth: 3,
+                borderColor: '#c5a059',
+                backgroundColor: 'rgba(197, 160, 89, 0.1)',
+                borderWidth: 2,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 4,
-                pointBackgroundColor: '#f1c40f'
+                pointRadius: 0
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: {
-                    beginAtZero: false,
-                    grid: { color: 'rgba(255,255,255,0.05)' },
-                    ticks: { color: '#bdc3c7' }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { display: false }
-                }
+                y: { display: false },
+                x: { display: false }
             },
             plugins: {
                 legend: { display: false },
-                tooltip: { backgroundColor: '#16213e', titleColor: '#e94560', bodyColor: '#fff' }
+                tooltip: { enabled: true }
             }
         }
     });
+}
+
+function updateChart(balance) {
+    if (!chart) initChart();
+    balanceHistory.push(balance);
+    if (balanceHistory.length > 20) balanceHistory.shift();
+    chart.data.labels = balanceHistory.map((_, i) => i);
+    chart.data.datasets[0].data = balanceHistory;
+    chart.update('none');
 }
 
 function playSound(type) {
     const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
     const oscillator = audioCtx.createOscillator();
     const gainNode = audioCtx.createGain();
-
     oscillator.connect(gainNode);
     gainNode.connect(audioCtx.destination);
 
@@ -56,35 +59,22 @@ function playSound(type) {
         oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
         gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.1);
+        oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.1);
     } else if (type === 'win') {
         oscillator.type = 'triangle';
         oscillator.frequency.setValueAtTime(523, audioCtx.currentTime);
         oscillator.frequency.exponentialRampToValueAtTime(659, audioCtx.currentTime + 0.2);
         gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.4);
+        oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.4);
     } else if (type === 'loss') {
         oscillator.type = 'sawtooth';
         oscillator.frequency.setValueAtTime(220, audioCtx.currentTime);
         oscillator.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.3);
         gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
         gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.4);
+        oscillator.start(); oscillator.stop(audioCtx.currentTime + 0.4);
     }
-}
-
-function updateChart(balance) {
-    if (!chart) initChart();
-    balanceHistory.push(balance);
-    if (balanceHistory.length > 20) balanceHistory.shift();
-
-    chart.data.labels = balanceHistory.map((_, i) => i + 1);
-    chart.data.datasets[0].data = balanceHistory;
-    chart.update('none');
 }
 
 async function fetchData(url, data = null, method = 'POST') {
@@ -97,197 +87,269 @@ async function fetchData(url, data = null, method = 'POST') {
     return response.json();
 }
 
+function enterCasino() {
+    const overlay = document.getElementById('welcome-overlay');
+    const container = document.getElementById('main-container');
+    overlay.classList.add('hidden');
+    container.style.opacity = '1';
+    container.style.pointerEvents = 'all';
+    playSound('win');
+}
+
+function toggleManual() {
+    const modal = document.getElementById('rule-modal');
+    modal.style.display = modal.style.display === 'none' ? 'flex' : 'none';
+}
+
 async function updateUI(state) {
-    const prevState = current_state;
     current_state = state;
 
-    // Render Players
+    // Phase Visibility & Messaging
+    const messageArea = document.getElementById('message-area');
+    messageArea.innerText = state.message;
+
+    // Trigger Effects
+    const currentRoundID = state.stats.rounds_played;
+    if (state.game_over && state.message && currentRoundID > lastRoundID && !state.waiting_for_bets) {
+        lastRoundID = currentRoundID;
+        if (state.message.includes("WIN") || state.message.includes("Paga")) {
+            triggerScreenEffects('win');
+            if (state.players[0].bet >= 100) triggerChipRain();
+        } else if (state.message.includes("LOSS") || state.message.includes("Pierde")) {
+            triggerScreenEffects('loss');
+        }
+    }
+
+    // updateAIEmotions(state); // Disabled for professional look
+
+    // Sidebar & Betting
+    document.getElementById('betting-area').style.display = state.waiting_for_bets ? 'block' : 'none';
+    document.getElementById('game-actions').style.display = (!state.waiting_for_bets && !state.game_over) ? 'grid' : 'none';
+
+    // Stats
+    document.getElementById('stat-rounds').innerText = state.stats.rounds_played;
+    document.getElementById('count-value').innerText = state.count;
+
+    const aiAcc = state.stats.ai_decisions_total > 0 ? ((state.stats.ai_decisions_correct / state.stats.ai_decisions_total) * 100).toFixed(1) : 0;
+    document.getElementById('stat-accuracy').innerText = aiAcc + "%";
+
+    const pAcc = state.stats.player_decisions_total > 0 ? ((state.stats.player_decisions_correct / state.stats.player_decisions_total) * 100).toFixed(1) : 0;
+    document.getElementById('stat-player-accuracy').innerText = pAcc + "%";
+
+    if (state.players[0]) {
+        document.getElementById('current-bet-display').innerText = `$${currentBet}`;
+        updateChart(state.players[0].balance);
+    }
+
+    // Advice
+    if (!state.game_over && !state.waiting_for_bets && state.players[state.current_player_idx].owner === "Human") {
+        updateAdvice();
+    } else {
+        document.getElementById('ai-advice').innerText = "Esperando turno...";
+        document.getElementById('prob-hit').innerText = "0%";
+        document.getElementById('prob-stand').innerText = "0%";
+    }
+
+    renderEliteLog(state.decision_history);
+
+    // Dealer
+    if (state.waiting_for_bets) {
+        document.getElementById('dealer-cards').innerHTML = '';
+        document.getElementById('dealer-score').innerText = '';
+    } else {
+        if (state.game_over) {
+            renderHand('dealer-cards', state.dealer_hand.cards, true);
+            document.getElementById('dealer-score').innerText = state.dealer_hand.value;
+        } else {
+            renderHandHidden('dealer-cards', state.dealer_hand.cards);
+            document.getElementById('dealer-score').innerText = "?";
+        }
+    }
+
+    // Players
     const container = document.getElementById('players-container');
     container.innerHTML = '';
-
     state.players.forEach((player, idx) => {
-        const handDiv = document.createElement('div');
-        handDiv.className = 'hand-section';
+        const handWrapper = document.createElement('div');
+        handWrapper.className = 'hand-section';
         if (idx === state.current_player_idx && !state.game_over && !state.waiting_for_bets) {
-            handDiv.classList.add('active-player');
+            handWrapper.classList.add('active-turn-glow');
         }
 
-        let statusText = player.busted ? " <span style='color:#e74c3c'>(BUST)</span>" : (player.withdrawn ? " <span style='color:#7f8c8d'>(OUT)</span>" : "");
-        let betText = (player.current_bet > 0) ? ` · Bet: $${player.current_bet}` : "";
+        const playerName = player.owner === 'Human' ? 'Tú' : player.owner;
+        let statusTag = "";
+        if (player.busted) statusTag = `<span class="badge bust">PASADO</span>`;
+        else if (player.standing) statusTag = `<span class="badge stand">PLANTADO</span>`;
 
-        handDiv.innerHTML = `<h3>${player.owner} <span id="${player.owner}-score">(${player.value})</span>${statusText}</h3>
-                             <p class="balance-display">Saldo: $${player.balance}${betText}</p>
-                             <div class="cards" id="${player.owner}-cards-${idx}"></div>`;
-        container.appendChild(handDiv);
-        renderHand(`${player.owner}-cards-${idx}`, player.cards);
+        handWrapper.innerHTML = `
+            <div class="section-title">${playerName} ${statusTag}</div>
+            <div class="cards" id="${player.owner}-cards-${idx}"></div>
+            <div class="score-pill">${player.value} | $${player.bet}</div>
+        `;
+        container.appendChild(handWrapper);
+        renderHand(`${player.owner}-cards-${idx}`, player.cards, true);
     });
 
-    // Render Dealer Cards
-    let dealerCards = state.dealer_hand.cards;
-    if (!state.game_over && !state.waiting_for_bets && dealerCards.length > 1) {
-        renderHandHidden('dealer-cards', dealerCards[0]);
-        document.getElementById('dealer-score').innerText = "(?)";
-    } else {
-        renderHand('dealer-cards', dealerCards);
-        document.getElementById('dealer-score').innerText = dealerCards.length > 0 ? `(${state.dealer_hand.value})` : "";
-    }
+    updateInteractionControls(state);
+}
 
-    // Phase Visibility
-    if (state.waiting_for_bets) {
-        document.getElementById('betting-area').style.display = 'block';
-        document.getElementById('game-actions').style.display = 'none';
-        document.getElementById('btn-new').style.display = 'none';
-        document.getElementById('message-area').innerText = state.message;
-    } else if (state.game_over) {
-        document.getElementById('betting-area').style.display = 'none';
-        document.getElementById('game-actions').style.display = 'none';
-        document.getElementById('btn-new').style.display = 'block';
-        document.getElementById('message-area').innerText = state.message;
+function updateInteractionControls(state) {
+    if (state.game_over || state.waiting_for_bets) return;
+    const currentPlayer = state.players[state.current_player_idx];
+    const isHuman = currentPlayer.owner === "Human";
 
-        if (state.players.length > 0) {
-            updateChart(state.players[0].balance);
-            if (state.message.includes("WIN") || state.message.includes("Paga")) playSound('win');
-            else if (state.message.includes("LOSS") || state.message.includes("Pierde")) playSound('loss');
-        }
+    document.getElementById('btn-hit').disabled = !isHuman;
+    document.getElementById('btn-stand').disabled = !isHuman;
+    document.getElementById('btn-double').disabled = !isHuman || currentPlayer.cards.length > 2;
+    document.getElementById('btn-withdraw').disabled = !isHuman;
 
-        // Show Stats
-        document.getElementById('stats-area').style.display = 'grid';
-        document.getElementById('stat-rounds').innerText = state.stats.rounds_played;
-        document.getElementById('stat-human-wins').innerText = "$" + (state.players[0] ? state.players[0].balance : "0");
+    const btnSplit = document.getElementById('btn-split');
+    const btnInsurance = document.getElementById('btn-insurance');
+    btnSplit.style.display = (isHuman && currentPlayer.cards.length === 2 && currentPlayer.cards[0].rank === currentPlayer.cards[1].rank) ? 'inline-block' : 'none';
+    btnInsurance.style.display = (isHuman && currentPlayer.cards.length === 2 && state.dealer_hand.cards[1].rank === 'A' && !currentPlayer.is_insurance) ? 'inline-block' : 'none';
+}
 
-        const accuracy = state.stats.ai_decisions_total > 0 ? (state.stats.ai_decisions_correct / state.stats.ai_decisions_total * 100).toFixed(1) : 0;
-        document.getElementById('stat-accuracy').innerText = accuracy + "%";
-        document.getElementById('count-value').innerText = state.count;
-
-        // Render Decision History
-        if (state.decision_history && state.decision_history.length > 0) {
-            document.getElementById('decision-log').style.display = 'block';
-            const logList = document.getElementById('log-list');
-            logList.innerHTML = '';
-            state.decision_history.slice().reverse().slice(0, 10).forEach(entry => {
-                const li = document.createElement('li');
-                li.innerHTML = `<strong>${entry.player}</strong>: ${entry.action} <span class="badge">${entry.reason}</span> <small>(P:${(entry.prob_hit * 100).toFixed(0)}%)</small>`;
-                logList.appendChild(li);
-            });
-        }
-    } else {
-        document.getElementById('betting-area').style.display = 'none';
-        document.getElementById('game-actions').style.display = 'flex';
-        document.getElementById('btn-new').style.display = 'none';
-
-        const currentPlayer = state.players[state.current_player_idx];
-        document.getElementById('message-area').innerText = "Turno de: " + currentPlayer.owner;
-
-        const isHumanTurn = currentPlayer.owner === "Human";
-        document.getElementById('btn-hit').disabled = !isHumanTurn;
-        document.getElementById('btn-stand').disabled = !isHumanTurn;
-        document.getElementById('btn-double').disabled = !isHumanTurn || currentPlayer.cards.length > 2;
-        document.getElementById('btn-withdraw').disabled = !isHumanTurn;
-
-        const btnSplit = document.getElementById('btn-split');
-        const btnInsurance = document.getElementById('btn-insurance');
-        btnSplit.style.display = (isHumanTurn && currentPlayer.cards.length === 2 && currentPlayer.cards[0].rank === currentPlayer.cards[1].rank) ? 'inline-block' : 'none';
-        btnInsurance.style.display = (isHumanTurn && currentPlayer.cards.length === 2 && state.dealer_hand.cards[1].rank === 'A' && !currentPlayer.is_insurance) ? 'inline-block' : 'none';
-
-        if (isHumanTurn) updateAdvice();
-    }
+function renderEliteLog(history) {
+    const logList = document.getElementById('log-list');
+    logList.innerHTML = '';
+    [...history].reverse().slice(0, 15).forEach(entry => {
+        const li = document.createElement('li');
+        const badgeType = entry.reason === 'Q-Learning' ? 'badge-rl' : (entry.reason === 'Monte Carlo' ? 'badge-mc' : 'badge-count');
+        li.innerHTML = `
+            <span class="log-badge ${badgeType}">${entry.reason}</span>
+            <span class="log-player">${entry.player}</span>
+            <span class="log-action">➔ ${entry.action} ${entry.prob_hit ? `(${(entry.prob_hit * 100).toFixed(0)}%)` : ''}</span>
+            <span class="log-count">Hilo: ${entry.count}</span>
+        `;
+        logList.appendChild(li);
+    });
 }
 
 async function updateAdvice() {
     const data = await fetchData('/api/probability', null, 'GET');
-    document.getElementById('ai-advice').innerText = data.recommendation;
+    document.getElementById('ai-advice').innerHTML = `<strong>Sugerencia:</strong> ${data.recommendation}`;
     document.getElementById('prob-hit').innerText = (data.hit_win_rate * 100).toFixed(1) + "%";
     document.getElementById('prob-stand').innerText = (data.stand_win_rate * 100).toFixed(1) + "%";
 }
 
-function renderHand(elementId, cards) {
+function triggerScreenEffects(type) {
+    const main = document.querySelector('.game-board');
+    if (!main) return;
+    main.classList.remove('win-flash', 'shake');
+    void main.offsetWidth;
+    if (type === 'win') main.classList.add('win-flash');
+    else if (type === 'loss') main.classList.add('shake');
+}
+
+function renderHand(elementId, cards, flipped = true) {
+    const container = document.getElementById(elementId);
+    if (!container) return;
+    const existingCount = container.children.length;
+
+    cards.slice(existingCount).forEach((card, i) => {
+        const cardCont = document.createElement('div');
+        cardCont.className = 'card-container';
+        if (flipped) cardCont.classList.add('flipped');
+
+        const isRed = ['Hearts', 'Diamonds', '♥', '♦'].includes(card.suit);
+        cardCont.innerHTML = `
+            <div class="card-face card-front ${isRed ? 'red' : 'black'}">${getCardSymbol(card)}</div>
+            <div class="card-face card-back"></div>
+        `;
+        container.appendChild(cardCont);
+        // Animate from shoe
+        const shoe = document.getElementById('card-shoe');
+        const shoeRect = shoe.getBoundingClientRect();
+        const cardRect = cardCont.getBoundingClientRect();
+        cardCont.animate([
+            { transform: `translate(${shoeRect.left - cardRect.left}px, ${shoeRect.top - cardRect.top}px) rotate(-45deg) scale(0.1)`, opacity: 0 },
+            { transform: 'translate(0, 0) rotate(180deg) scale(1)', opacity: 1 }
+        ], { duration: 600, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' });
+        playSound('deal');
+    });
+}
+
+function renderHandHidden(elementId, cards) {
     const container = document.getElementById(elementId);
     if (!container) return;
     container.innerHTML = '';
     cards.forEach((card, i) => {
-        const div = document.createElement('div');
-        div.className = `card ${['Hearts', 'Diamonds'].includes(card.suit) ? 'red' : 'black'} animate-deal`;
-        div.style.animationDelay = `${i * 0.1}s`;
-        div.innerText = getCardSymbol(card);
-        container.appendChild(div);
-        if (i === cards.length - 1) playSound('deal');
+        const cardCont = document.createElement('div');
+        cardCont.className = 'card-container';
+        if (i === 1) cardCont.classList.add('flipped');
+        const isRed = ['Hearts', 'Diamonds', '♥', '♦'].includes(card.suit);
+        cardCont.innerHTML = `<div class="card-face card-front ${isRed ? 'red' : 'black'}">${i === 1 ? getCardSymbol(card) : '?'}</div><div class="card-face card-back"></div>`;
+        container.appendChild(cardCont);
+        const shoeRect = document.getElementById('card-shoe').getBoundingClientRect();
+        const cardRect = cardCont.getBoundingClientRect();
+        cardCont.animate([
+            { transform: `translate(${shoeRect.left - cardRect.left}px, ${shoeRect.top - cardRect.top}px) rotate(-45deg) scale(0.1)`, opacity: 0 },
+            { transform: 'translate(0, 0) scale(1)', opacity: 1 }
+        ], { duration: 600, delay: i * 200, easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)', fill: 'forwards' });
+        setTimeout(() => playSound('deal'), i * 200);
     });
 }
 
-function renderHandHidden(elementId, firstCard) {
-    const container = document.getElementById(elementId);
-    if (!container) return;
-    container.innerHTML = '';
-
-    // First card revealed
-    const c1 = document.createElement('div');
-    c1.className = `card ${['Hearts', 'Diamonds'].includes(firstCard.suit) ? 'red' : 'black'} animate-deal`;
-    c1.innerText = getCardSymbol(firstCard);
-    container.appendChild(c1);
-
-    // Second card hidden
-    const c2 = document.createElement('div');
-    c2.className = 'card back animate-deal';
-    c2.innerText = '?';
-    container.appendChild(c2);
-}
-
 function getCardSymbol(card) {
-    const suitMaps = { 'Hearts': '♥', 'Diamonds': '♦', 'Spades': '♠', 'Clubs': '♣' };
-    return `${card.rank}${suitMaps[card.suit]}`;
+    const suitMaps = { 'Hearts': '♥', 'Diamonds': '♦', 'Spades': '♠', 'Clubs': '♣', '♥': '♥', '♦': '♦', '♠': '♠', '♣': '♣' };
+    return `${card.rank}${suitMaps[card.suit] || card.suit}`;
 }
 
 function addBet(amount) {
     currentBet += amount;
-    document.getElementById('current-bet-display').innerText = currentBet;
+    document.getElementById('current-bet-display').innerText = `$${currentBet}`;
     playSound('deal');
 }
 
 function resetBet() {
     currentBet = 10;
-    document.getElementById('current-bet-display').innerText = currentBet;
+    document.getElementById('current-bet-display').innerText = `$${currentBet}`;
 }
 
 async function placeBet() {
+    await cleanupTable();
     const diff = document.getElementById('diff-select').value;
     const state = await fetchData('/api/bet', { amount: currentBet, difficulty: diff });
     updateUI(state);
 }
 
 async function startGame() {
+    await cleanupTable();
     const diff = document.getElementById('diff-select').value;
     const state = await fetchData('/api/start', { num_ai: 2, difficulty: diff });
     updateUI(state);
 }
 
-async function hit() {
-    const state = await fetchData('/api/hit');
-    updateUI(state);
+async function hit() { const state = await fetchData('/api/hit'); updateUI(state); }
+async function stand() { const state = await fetchData('/api/stand'); updateUI(state); }
+async function doubleDown() { const state = await fetchData('/api/double'); updateUI(state); }
+async function split() { const state = await fetchData('/api/split'); updateUI(state); }
+async function insurance() { const state = await fetchData('/api/insurance'); updateUI(state); }
+async function withdraw() { const state = await fetchData('/api/withdraw'); updateUI(state); }
+
+async function updateAIEmotions(state) {
+    // Removed emoji reactions for a more professional look
 }
 
-async function stand() {
-    const state = await fetchData('/api/stand');
-    updateUI(state);
+function triggerChipRain() {
+    const board = document.getElementById('board-perspective');
+    for (let i = 0; i < 30; i++) {
+        const chip = document.createElement('div');
+        chip.className = 'chip-rain';
+        chip.style.left = Math.random() * 100 + "%";
+        chip.style.top = "-20px";
+        chip.style.backgroundColor = ['#f1c40f', '#c5a059', '#ecf0f1'][Math.floor(Math.random() * 3)];
+        board.appendChild(chip);
+        chip.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(600px)', opacity: 0 }], { duration: 2000 }).onfinish = () => chip.remove();
+    }
 }
 
-async function doubleDown() {
-    const state = await fetchData('/api/double');
-    updateUI(state);
-}
-
-async function split() {
-    const state = await fetchData('/api/split');
-    updateUI(state);
-}
-
-async function insurance() {
-    const state = await fetchData('/api/insurance');
-    updateUI(state);
-}
-
-async function withdraw() {
-    const state = await fetchData('/api/withdraw');
-    updateUI(state);
+async function cleanupTable() {
+    const cards = document.querySelectorAll('.card-container');
+    const promises = Array.from(cards).map((card, i) => {
+        return card.animate([{ opacity: 1 }, { transform: 'translateX(-500px)', opacity: 0 }], { duration: 400, delay: i * 30 }).finished;
+    });
+    await Promise.all(promises);
 }
 
 window.onload = async () => {

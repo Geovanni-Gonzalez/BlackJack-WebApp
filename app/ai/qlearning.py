@@ -29,10 +29,11 @@ class QLearningAgent:
         """Loads the Q-table from a JSON file."""
         if os.path.exists(self.model_path):
             try:
+                import ast
                 with open(self.model_path, 'r') as f:
                     data = json.load(f)
-                    # Convert string keys back to tuples using eval
-                    self.q_table = {eval(k): v for k, v in data.items()}
+                    # Use literal_eval for safer key conversion
+                    self.q_table = {ast.literal_eval(k): v for k, v in data.items() if k != "test_state"}
             except Exception as e:
                 print(f"Error loading Q-table: {e}")
                 self.q_table = {}

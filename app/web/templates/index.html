@@ -4,96 +4,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlackJack Pro Simulator</title>
+    <title>BlackJack Pro | Elite AI Simulator</title>
+    <!-- Modern Luxury Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <h1>BlackJack Pro Simulator</h1>
-
-        <div class="game-board">
-            <div id="dealer-section" class="hand-section">
-                <h2>Dealer Hand <span id="dealer-score"></span></h2>
-                <div class="cards" id="dealer-cards"></div>
+    <div id="welcome-overlay" class="welcome-overlay">
+        <div class="welcome-content">
+            <h1 class="glitch-text">BLACKJACK <span class="gold-accent">PRO</span></h1>
+            <p class="subtitle">Simulador de IA de Alto Rendimiento | IC-3002</p>
+            <div class="header-badges">
+                <span class="badge">Q-Learning</span>
+                <span class="badge">Monte Carlo</span>
+                <span class="badge">Hi-Lo Count</span>
             </div>
-
-            <div id="message-area" class="message">Welcome to the Pro Simulator! Place your bet to begin.</div>
-
-            <div id="players-container">
-                <!-- Player hands will be injected here -->
-            </div>
+            <button class="primary-btn gold-btn" onclick="enterCasino()">Ingresar al Casino</button>
         </div>
+    </div>
 
-        <div class="controls-area">
-            <div id="betting-area">
-                <div class="difficulty-selector">
-                    <label>AI Intelligence:</label>
-                    <select id="diff-select">
-                        <option value="EASY">Casual (Basic)</option>
-                        <option value="HARD" selected>Pro (Q-Learning + MC)</option>
-                    </select>
+    <div class="container" id="main-container" style="opacity: 0; pointer-events: none;">
+        <header class="luxury-header">
+            <div class="logo">BJ <span class="gold-accent">PRO</span></div>
+        </header>
+
+        <div class="main-layout">
+            <div class="game-area">
+                <div class="game-board" id="board-perspective">
+                    <div id="card-shoe" class="card-shoe" title="Zapato de Cartas (Mazo)"></div>
+                    <div id="dealer-section" class="hand-section">
+                        <div class="section-title">Dealer</div>
+                        <div class="cards" id="dealer-cards"></div>
+                        <div class="score-pill" id="dealer-score"></div>
+                    </div>
+
+                    <div id="message-area" class="message-center">Prepare sus apuestas...</div>
+
+                    <div id="players-container">
+                        <!-- Player hands will be injected here -->
+                    </div>
                 </div>
-                <div class="chip-controls">
-                    <div class="chip chip-10" onclick="addBet(10)">10</div>
-                    <div class="chip chip-50" onclick="addBet(50)">50</div>
-                    <div class="chip chip-100" onclick="addBet(100)">100</div>
-                    <div class="chip chip-reset" onclick="resetBet()">Reset</div>
+
+                <div class="ai-live-dashboard luxury-border">
+                    <div class="insight-meta">
+                        <span class="status-indicator ripple"></span> ASESORÍA IA EN TIEMPO REAL
+                    </div>
+                    <div class="insight-flex">
+                        <div class="advice-text" id="ai-advice">Esperando datos de sesión...</div>
+                        <div class="prob-visualization">
+                            <div class="prob-group">
+                                <label>Hit Win</label>
+                                <span id="prob-hit">0%</span>
+                            </div>
+                            <div class="prob-group">
+                                <label>Stand Win</label>
+                                <span id="prob-stand">0%</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="bet-info">
-                    Current Bet: <strong>$<span id="current-bet-display">10</span></strong>
+            </div>
+
+            <aside class="sidebar">
+                <div class="side-card control-panel luxury-border">
+                    <h3>Panel de Acciones</h3>
+
+                    <div id="betting-area">
+                        <div class="control-group">
+                            <label>Dificultad IA</label>
+                            <select id="diff-select" class="luxury-input">
+                                <option value="EASY">Básica (Reglas)</option>
+                                <option value="HARD" selected>Experta (RL + MC)</option>
+                            </select>
+                        </div>
+
+                        <div class="chip-rack">
+                            <div class="chip gold" onclick="addBet(10)">10</div>
+                            <div class="chip gold" onclick="addBet(50)">50</div>
+                            <div class="chip gold" onclick="addBet(100)">100</div>
+                        </div>
+
+                        <div class="bet-summary">
+                            Apuesta: <span id="current-bet-display" class="gold-text">$10</span>
+                        </div>
+
+                        <button class="primary-btn gold-btn full-width" id="btn-start" onclick="placeBet()">Repartir
+                            Cartas</button>
+                    </div>
+
+                    <div id="game-actions" style="display: none;" class="action-buttons">
+                        <div class="action-row">
+                            <button class="game-btn" id="btn-hit" onclick="hit()">Pedir</button>
+                            <button class="game-btn" id="btn-stand" onclick="stand()">Plantar</button>
+                        </div>
+                        <div class="action-row">
+                            <button class="game-btn" id="btn-double" onclick="doubleDown()">Doblar</button>
+                            <button class="game-btn" id="btn-split" onclick="split()"
+                                style="display: none;">Dividir</button>
+                            <button class="game-btn" id="btn-insurance" onclick="insurance()"
+                                style="display: none;">Seguro</button>
+                        </div>
+                        <button class="game-btn outline" id="btn-withdraw" onclick="withdraw()">Retirarse</button>
+                    </div>
                 </div>
-                <button class="primary-btn" id="btn-start" onclick="placeBet()">Confirm Bet & Deal</button>
-            </div>
 
-            <div id="game-actions" style="display: none;" class="controls">
-                <button id="btn-hit" onclick="hit()">Hit</button>
-                <button id="btn-stand" onclick="stand()">Stand</button>
-                <button id="btn-double" onclick="doubleDown()">Double</button>
-                <button id="btn-split" onclick="split()" style="display: none;">Split</button>
-                <button id="btn-insurance" onclick="insurance()" style="display: none;">Insurance</button>
-                <button id="btn-withdraw" onclick="withdraw()">Withdraw</button>
-            </div>
+                <div class="side-card stats-panel luxury-border">
+                    <h3>Métricas Académicas</h3>
+                    <div class="stat-grid">
+                        <div class="mini-stat">
+                            <small>RONDAS</small>
+                            <span id="stat-rounds">0</span>
+                        </div>
+                        <div class="mini-stat">
+                            <small>HI-LO</small>
+                            <span id="count-value">0</span>
+                        </div>
+                        <div class="mini-stat highlight">
+                            <small>EFECTIVIDAD IA</small>
+                            <span id="stat-accuracy">0%</span>
+                        </div>
+                        <div class="mini-stat user-highlight">
+                            <small>TU PRECISIÓN</small>
+                            <span id="stat-player-accuracy">0%</span>
+                        </div>
+                    </div>
+                </div>
 
-            <button id="btn-new" class="primary-btn" onclick="startGame()" style="display: none; margin: 20px auto;">New
-                Session</button>
+                <div class="side-card chart-panel luxury-border">
+                    <h3>Análisis de Saldo</h3>
+                    <div class="chart-box">
+                        <canvas id="balanceChart"></canvas>
+                    </div>
+                </div>
+            </aside>
         </div>
 
-        <div id="stats-area" class="stats-summary" style="display: none;">
-            <div class="stat-box">
-                <span class="stat-label">Rounds</span>
-                <span class="stat-value" id="stat-rounds">0</span>
+        <section class="footer-analysis">
+            <div class="decision-tracker luxury-border">
+                <h3><i class="icon-trace"></i> Trazabilidad de Algoritmos (Q-Table & Decisions)</h3>
+                <div class="log-viewport">
+                    <ul id="log-list" class="elite-log"></ul>
+                </div>
             </div>
-            <div class="stat-box">
-                <span class="stat-label">Net Balance</span>
-                <span class="stat-value" id="stat-human-wins">0</span>
+            <div class="footer-actions">
+                <button class="ghost-btn" onclick="toggleManual()">📖 Manual Técnico & Guía IC-3002</button>
             </div>
-            <div class="stat-box">
-                <span class="stat-label">AI Accuracy</span>
-                <span class="stat-value" id="stat-accuracy">0%</span>
-            </div>
-            <div class="stat-box">
-                <span class="stat-label">Card Count</span>
-                <span class="stat-value" id="count-value">0</span>
-            </div>
-        </div>
+        </section>
 
-        <div class="analytics-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px;">
-            <div class="chart-container">
-                <h4>Performance Evolution</h4>
-                <canvas id="balanceChart"></canvas>
+        <!-- Rule Manual Modal -->
+        <div id="rule-modal" class="modal" style="display: none;">
+            <div class="modal-content professional-theme">
+                <span class="close-btn" onclick="toggleManual()">&times;</span>
+                <div class="doc-header">
+                    <h2>IC-3002: Proyecto Blackjack AI</h2>
+                    <p>Referencia Estratégica y Arquitectura del Agente</p>
+                </div>
+                <div class="doc-body">
+                    <div class="doc-section">
+                        <h4>Sistemas de IA</h4>
+                        <ul>
+                            <li><strong>Monte Carlo:</strong> Cálculo de esperanza matemática mediante simulaciones
+                                estocásticas.</li>
+                            <li><strong>Q-Learning:</strong> Optimización de la política de acciones mediante
+                                aprendizaje reforzado (diccionario persistente).</li>
+                            <li><strong>Conteo Hi-Lo:</strong> Ajuste dinámico de la ventaja de la casa basado en la
+                                composición residual del mazo.</li>
+                        </ul>
+                    </div>
+                    <div class="doc-section">
+                        <h4>Métricas de Evaluación</h4>
+                        <p>El sistema mide la "Precisión Estratégica" comparando cada decisión del usuario y la IA
+                            contra la jugada óptima calculada por el simulador MC.</p>
+                    </div>
+                </div>
             </div>
-            <div id="decision-log" class="decision-log" style="display: none;">
-                <h4>AI Strategy Insights</h4>
-                <ul id="log-list"></ul>
-            </div>
-        </div>
-
-        <div class="ai-insight" style="margin-top: 15px; color: #f1c40f; font-style: italic;">
-            <strong>AI Suggestion:</strong> <span id="ai-advice">Waiting for turn...</span>
-            <br>
-            <small>Probabilities: Hit <span id="prob-hit">0%</span> | Stand <span id="prob-stand">0%</span></small>
         </div>
     </div>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
