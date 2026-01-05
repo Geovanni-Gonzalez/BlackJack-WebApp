@@ -4,6 +4,10 @@ def run_console_game():
     game = BlackJackGame()
     game.start_new_round()
     
+    # Place bet and confirm to deal cards
+    game.players[0].place_bet(100)
+    game.confirm_bets()
+    
     print("--- New Game ---")
     print(f"Dealer shows: {game.dealer_hand.cards[1]}") # Show only one card usually, but for debug showing logic
     human_player = game.players[0]

@@ -3,3 +3,8 @@ numpy
 matplotlib
 Flask-SQLAlchemy
 pandas
+Flask-Session
+Flask-Limiter
+Flask-WTF
+flask-socketio
+eventlet

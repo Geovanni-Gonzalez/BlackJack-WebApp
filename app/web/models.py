@@ -7,6 +7,7 @@ class PlayerModel(db.Model):
     __tablename__ = 'players'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(50), unique=True, nullable=False)
+    password_hash = db.Column(db.String(128)) # Using Werkzeug default hash length
     balance = db.Column(db.Integer, default=1000)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 

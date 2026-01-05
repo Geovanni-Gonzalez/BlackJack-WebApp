@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>BlackJack Pro | Elite AI Simulator</title>
     <!-- Modern Luxury Typography -->
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800;900&display=swap"
@@ -11,6 +12,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='header-styles.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
 
 <body>
@@ -20,7 +22,7 @@
     <div id="welcome-overlay" class="welcome-overlay">
         <div class="welcome-content">
             <h1 class="glitch-text">BLACKJACK <span class="gold-accent">PRO</span></h1>
-            <p class="subtitle">Simulador de IA de Alto Rendimiento | IC-3002</p>
+            <p class="subtitle">Simulador de IA de Alto Rendimiento</p>
             <div class="header-badges">
                 <span class="badge">Q-Learning</span>
                 <span class="badge">Monte Carlo</span>
@@ -122,23 +124,41 @@
                     <div id="betting-area">
                         <div class="control-group">
                             <label for="diff-select">Dificultad IA:</label>
-                            <select id="diff-select" class="neon-input">
+                            <select id="diff-select" class="luxury-select">
                                 <option value="EASY">Principiante (Random)</option>
                                 <option value="MEDIUM" selected>Estándar (Basic)</option>
                                 <option value="HARD">Profesional (Counter)</option>
                             </select>
                         </div>
 
-                        <div class="control-group"
-                            style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between;">
-                            <label for="auto-play-toggle" style="cursor: pointer;">🔄 Auto Nueva Ronda</label>
-                            <label class="switch">
-                                <input type="checkbox" id="auto-play-toggle">
-                                <span class="slider round"></span>
-                            </label>
+                        <!-- Sección Auto-Round Mejorada -->
+                        <div class="control-panel glass-panel" style="margin-top: 20px;">
+                            <div class="panel-header">
+                                <h4>🤖 Auto Pilot</h4>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                                <div class="control-group"
+                                    style="display: flex; align-items: center; justify-content: space-between;">
+                                    <label>Rondas:</label>
+                                    <input type="number" id="auto-rounds-input" value="0" min="0" max="100"
+                                        class="luxury-input" style="width: 80px;">
+                                </div>
+                                <div class="control-group"
+                                    style="display: flex; align-items: center; justify-content: space-between;">
+                                    <label title="Detener si saldo baja a...">🛑 Stop Loss:</label>
+                                    <input type="number" id="stop-loss-input" placeholder="Min $" class="luxury-input"
+                                        style="width: 100px;">
+                                </div>
+                                <div class="control-group"
+                                    style="display: flex; align-items: center; justify-content: space-between;">
+                                    <label title="Detener si saldo sube a...">💰 Take Profit:</label>
+                                    <input type="number" id="take-profit-input" placeholder="Max $" class="luxury-input"
+                                        style="width: 100px;">
+                                </div>
+                            </div>
                         </div>
 
-                        <div id="chip-selection" class="action-grid">
+                        <div id="chip-selection" class="chip-rack">
                             <div class="chip gold" onclick="addBet(10)">10</div>
                             <div class="chip gold" onclick="addBet(50)">50</div>
                             <div class="chip gold" onclick="addBet(100)">100</div>

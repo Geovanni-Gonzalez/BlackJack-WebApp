@@ -1,0 +1,30 @@
+{
+    "tech": [
+        "Python",
+        "Flask",
+        "NumPy",
+        "Matplotlib",
+        "Pandas"
+    ],
+    "features": [
+        "Simulador de Blackjack",
+        "IA con Q-Learning (Reinforcement Learning)",
+        "Simulaciones de Monte Carlo",
+        "Conteo de Cartas (Hi-Lo System)",
+        "Interfaz Web Pro (Flask)"
+    ],
+    "stack": {
+        "language": "Python 3.10+",
+        "framework": "Flask",
+        "tools": [
+            "NumPy",
+            "Matplotlib",
+            "Pandas"
+        ]
+    },
+    "screenshots": [],
+    "description": {
+        "es": "Aplicación web que simula partidas de Blackjack contra una IA avanzada. Implementa algoritmos de Aprendizaje por Refuerzo (Q-Learning) y simulaciones de Monte Carlo para calcular probabilidades en tiempo real, además de un asistente de conteo de cartas.",
+        "en": "Web application simulating Blackjack games against an advanced AI. Implements Reinforcement Learning (Q-Learning) and Monte Carlo simulations for real-time probability calculation, along with a card counting assistant."
+    }
+}

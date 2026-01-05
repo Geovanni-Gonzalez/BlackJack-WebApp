@@ -79,13 +79,23 @@ function playSound(type) {
 
 async function fetchData(url, data = null, method = 'POST') {
     console.log(`[API REQUEST] ${method} ${url}`, data);
-    const options = { method: method };
-    if (data) {
-        options.headers = { 'Content-Type': 'application/json' };
-        options.body = JSON.stringify(data);
-    }
     try {
-        const response = await fetch(url, options);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const headers = {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken
+        };
+
+        const config = {
+            method: method,
+            headers: headers
+        };
+
+        if (method !== 'GET' && data) {
+            config.body = JSON.stringify(data);
+        }
+
+        const response = await fetch(url, config);
         const json = await response.json();
         console.log(`[API RESPONSE] ${url}:`, json);
         return json;
@@ -304,9 +314,15 @@ function updateInteractionControls(state) {
     document.getElementById('btn-new-round').style.display = 'none';
 
     const currentPlayer = state.players[state.current_player_idx];
-    const isHuman = currentPlayer.owner === "Human";
+    // Fix: Owner name might be username now, but Player 0 is always the local human in this architecture
+    const isHuman = (state.current_player_idx === 0);
 
-    document.getElementById('btn-hit').disabled = !isHuman;
+    console.log(`[UI CTRL] Round: ${state.stats.rounds_played}, Wait: ${state.waiting_for_bets}, Owner: ${currentPlayer.owner}, isHuman: ${isHuman}`);
+
+    const hitBtn = document.getElementById('btn-hit');
+    hitBtn.disabled = !isHuman;
+    console.log(`[UI CTRL] Hit Button Disabled? ${hitBtn.disabled}`);
+
     document.getElementById('btn-stand').disabled = !isHuman;
     document.getElementById('btn-double').disabled = !isHuman || currentPlayer.cards.length > 2;
     document.getElementById('btn-withdraw').disabled = !isHuman;
@@ -467,6 +483,23 @@ async function placeBet() {
     updateUI(state);
 }
 
+// Socket.IO Initialization
+const socket = io();
+
+socket.on('connect', () => {
+    console.log('[Socket] Connected!');
+    socket.emit('join_game', {}); // Join global room for now
+});
+
+socket.on('disconnect', () => {
+    console.log('[Socket] Disconnected');
+});
+
+socket.on('game_update', (state) => {
+    console.log('[Socket] Game Update Rule:', state);
+    updateUI(state);
+});
+
 async function startGame() {
     await cleanupTable();
     const diff = document.getElementById('diff-select').value;
@@ -474,10 +507,15 @@ async function startGame() {
     updateUI(state);
 }
 
-async function hit() { const state = await fetchData('/api/hit'); updateUI(state); }
-async function stand() { const state = await fetchData('/api/stand'); updateUI(state); }
-async function doubleDown() { const state = await fetchData('/api/double'); updateUI(state); }
-async function split() { const state = await fetchData('/api/split'); updateUI(state); }
+// Replaced HTTP calls with Socket Emits for speed
+function hit() { socket.emit('hit'); }
+function stand() { socket.emit('stand'); }
+function doubleDown() { socket.emit('double'); }
+// Split/Insurance/Withdraw can remain HTTP or move to Socket. 
+// Keeping them HTTP for now as they are less freq or complex? 
+// Actually, consistency is better. Let's redirect Split too if backend supports it.
+// Backend sockets.py supports: hit, stand, double, split.
+function split() { socket.emit('split'); }
 async function insurance() { const state = await fetchData('/api/insurance'); updateUI(state); }
 async function withdraw() { const state = await fetchData('/api/withdraw'); updateUI(state); }
 
@@ -508,7 +546,8 @@ async function cleanupTable() {
 
 window.onload = async () => {
     initChart();
-    const state = await fetchData('/api/start', { num_ai: 2, difficulty: 'HARD' });
+    const diff = document.getElementById('diff-select') ? document.getElementById('diff-select').value : 'HARD';
+    const state = await fetchData('/api/start', { num_ai: 2, difficulty: diff });
     updateUI(state);
     initParallax();
 };
@@ -528,7 +567,9 @@ async function resetToBetting() {
     console.log("[UI] Resetting for new round...");
 
     // Call backend to reset game state
-    const state = await fetchData('/api/start', { num_ai: 2, difficulty: 'HARD' });
+    // Call backend to reset game state
+    const diff = document.getElementById('diff-select').value;
+    const state = await fetchData('/api/start', { num_ai: 2, difficulty: diff });
 
     if (state) {
         updateUI(state);
@@ -602,41 +643,41 @@ function updatePhaseBanner(state) {
     }
 }
 
+async function refillBalance() {
+    try {
+        const state = await fetchData('/api/refill', {}, 'POST');
+        if (state) {
+            updateUI(state);
+            document.getElementById('bankruptcy-modal').style.display = 'none';
+            playSound('win');
+            showToast("¡Recarga Exitosa! +$1000");
+        }
+    } catch (e) {
+        console.error("Refill error:", e);
+    }
+}
+
 playSound('win'); // Satisfying sound for new money
 
 // Auto-Play Logic
-let autoPlayActive = false;
+// Auto-Play Logic
 let autoPlayTimer = null;
 
-document.addEventListener('DOMContentLoaded', () => {
-    const toggle = document.getElementById('auto-play-toggle');
-    if (toggle) {
-        toggle.addEventListener('change', (e) => {
-            autoPlayActive = e.target.checked;
-            if (!autoPlayActive && autoPlayTimer) {
-                clearTimeout(autoPlayTimer);
-                autoPlayTimer = null;
-                showToast("Auto-Juego Desactivado");
-            } else if (autoPlayActive) {
-                showToast("Auto-Juego Activado");
-                // If game is already over, trigger immediate restart
-                if (current_state && current_state.game_over) {
-                    triggerAutoRestart();
-                }
-            }
-        });
-    }
-});
-
 function triggerAutoRestart() {
-    if (!autoPlayActive) return;
+    const roundsInput = document.getElementById('auto-rounds-input');
+    let roundsLeft = parseInt(roundsInput.value);
 
-    showToast("Nueva ronda en 3s...");
+    if (roundsLeft <= 0) return;
+
+    roundsInput.value = roundsLeft - 1; // Decrement visual counter
+    showToast(`Iniciando nueva ronda... Quedan: ${roundsLeft - 1}`);
 
     autoPlayTimer = setTimeout(() => {
-        if (autoPlayActive) {
-            resetToBetting();
-        }
+        resetToBetting();
+        // Immediately place bet and deal if auto-playing to keep flow
+        setTimeout(() => {
+            placeBet();
+        }, 1000);
     }, 3000);
 }
 
@@ -645,8 +686,28 @@ const originalUpdateUI = updateUI;
 updateUI = async function (state) {
     await originalUpdateUI(state);
 
-    if (state.game_over && autoPlayActive && !state.waiting_for_bets) {
-        // Did we just win/lose?
+    const roundsInput = document.getElementById('auto-rounds-input');
+    const stopLossInput = document.getElementById('stop-loss-input');
+    const takeProfitInput = document.getElementById('take-profit-input');
+
+    const roundsLeft = parseInt(roundsInput ? roundsInput.value : 0);
+    const stopLoss = parseInt(stopLossInput ? stopLossInput.value : 0);
+    const takeProfit = parseInt(takeProfitInput ? takeProfitInput.value : 0);
+    const currentBalance = state.players[0] ? state.players[0].balance : 0;
+
+    if (state.game_over && roundsLeft > 0 && !state.waiting_for_bets) {
+        // Stop Logic
+        if (stopLoss > 0 && currentBalance <= stopLoss) {
+            showToast(`🛑 Auto-Stop: Saldo bajo límite (${currentBalance})`);
+            roundsInput.value = 0;
+            return;
+        }
+        if (takeProfit > 0 && currentBalance >= takeProfit) {
+            showToast(`💰 Auto-Stop: Meta alcanzada (${currentBalance})`);
+            roundsInput.value = 0;
+            return;
+        }
+
         if (autoPlayTimer) clearTimeout(autoPlayTimer);
         triggerAutoRestart();
     }

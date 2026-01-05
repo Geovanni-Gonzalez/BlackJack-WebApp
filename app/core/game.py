@@ -3,8 +3,9 @@ from .rules import calculate_hand_value, is_bust, determine_winner
 from app.ai.counter import CardCounter
 
 class Hand:
-    def __init__(self, owner_name="Player", balance=1000):
+    def __init__(self, owner_name="Player", balance=1000, is_ai=False):
         self.owner_name = owner_name
+        self.is_ai = is_ai
         self.cards = []
         self.value = 0
         self.busted = False
@@ -79,34 +80,31 @@ class BlackJackGame:
     def start_new_round(self, num_ai=2, difficulty="HARD"):
         self.difficulty = difficulty
         if not self.players:
-            self.players = [Hand("Human")]
+            self.players = [Hand("Human", is_ai=False)]
             for i in range(num_ai):
-                self.players.append(Hand(f"AI_{i+1}"))
+                self.players.append(Hand(f"AI_{i+1}", is_ai=True))
         
         # Reset hands for new round but keep balance
         for p in self.players:
-            p.cards = []
-            p.value = 0
-            p.busted = False
-            p.standing = False
-            p.withdrawn = False
-            p.current_bet = 0
-            p.is_double_down = False
-            
-            # AI Auto-bet (10% of balance, min 10)
-            if "AI" in p.owner_name:
+            # ... reset logic ...
+            if p.is_ai:
                 p.place_bet(max(10, int(p.balance * 0.1)))
 
-        self.dealer_hand.cards = []
-        self.dealer_hand.value = 0
-        self.dealer_hand.busted = False
+    # ... (skipping unchanged parts) ...
+
+    def next_turn(self):
+        self.current_player_idx += 1
         
-        self.current_player_idx = 0
-        self.game_over = False
-        self.waiting_for_bets = True
-        self.message = "Place your bets to start!"
-        self.decision_history = []
-        self.stats['rounds_played'] += 1
+        while self.current_player_idx < len(self.players):
+            player = self.players[self.current_player_idx]
+            if player.is_ai:
+                self.ai_turn(player)
+                self.current_player_idx += 1
+            else:
+                # It's a Human player
+                return
+        
+        self.dealer_turn()
 
     def confirm_bets(self):
         """Called once human places bet to deal cards."""
