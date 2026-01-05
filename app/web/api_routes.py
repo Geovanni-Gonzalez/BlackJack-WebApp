@@ -36,8 +36,12 @@ def sync_player_db(game):
 def start_game():
     game = get_game_session()
     data = request.get_json() or {}
-    num_ai = data.get('num_ai', 2)
+    num_ai = int(data.get('num_ai', 2))
     difficulty = data.get('difficulty', 'HARD')
+    
+    # Validation
+    if not (0 <= num_ai <= 5): num_ai = 2
+    if difficulty not in ['EASY', 'MEDIUM', 'HARD']: difficulty = 'HARD'
     
     # DB Persistence LINKED TO AUTH
     if 'user_id' not in session:
@@ -61,7 +65,8 @@ def start_game():
 def place_bet():
     game = get_game_session()
     data = request.get_json()
-    amount = data.get('amount', 10)
+    amount = int(data.get('amount', 10))
+    if amount < 1: amount = 10
     
     if game.players:
         game.players[0].place_bet(amount)

@@ -3,8 +3,9 @@ from .rules import calculate_hand_value, is_bust, determine_winner
 from app.ai.counter import CardCounter
 
 class Hand:
-    def __init__(self, owner_name="Player", balance=1000, is_ai=False):
+    def __init__(self, owner_name="Player", balance=1000, is_ai=False, player_id=None):
         self.owner_name = owner_name
+        self.player_id = player_id # Socket ID or User ID
         self.is_ai = is_ai
         self.cards = []
         self.value = 0
@@ -17,12 +18,14 @@ class Hand:
         self.is_double_down = False
         self.is_split = False
         self.is_insurance = False
-        self.split_pair_value = None 
+        self.split_pair_value = None
 
     def __setstate__(self, state):
         self.__dict__ = state
         if 'is_ai' not in self.__dict__:
-            self.is_ai = False 
+            self.is_ai = False
+        if 'player_id' not in self.__dict__:
+            self.player_id = None 
 
     def add_card(self, card):
         self.cards.append(card)
@@ -50,6 +53,8 @@ class Hand:
     def to_dict(self):
         return {
             'owner': self.owner_name,
+            'player_id': self.player_id,
+            'is_ai': self.is_ai,
             'cards': [c.to_dict() for c in self.cards],
             'value': self.value,
             'busted': self.busted,
@@ -81,6 +86,15 @@ class BlackJackGame:
             'player_decisions_total': 0,
             'player_decisions_correct': 0
         }
+
+    def add_player(self, name, player_id=None, balance=1000):
+        """Adds a human player to the game dynamicall."""
+        new_hand = Hand(name, balance=balance, is_ai=False, player_id=player_id)
+        # Insert before dealer? Or simply append to players list
+        # If round already started, they might have to wait?
+        # For simplicity, we assume they join before round start
+        self.players.append(new_hand)
+        return new_hand
 
     def start_new_round(self, num_ai=2, difficulty="HARD"):
         self.difficulty = difficulty

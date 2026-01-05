@@ -28,7 +28,34 @@
                 <span class="badge">Monte Carlo</span>
                 <span class="badge">Hi-Lo Count</span>
             </div>
-            <button class="primary-btn gold-btn" onclick="enterCasino()">Ingresar al Casino</button>
+            <button class="primary-btn gold-btn" onclick="showLobby()">Ingresar al Casino</button>
+        </div>
+    </div>
+
+    <!-- Lobby Section -->
+    <div id="lobby-container" class="container"
+        style="display: none; justify-content: center; align-items: center; height: 100vh;">
+        <div class="lobby-card glass-panel" style="width: 400px; text-align: center; padding: 40px;">
+            <h2 class="glitch-text" style="font-size: 2rem; margin-bottom: 30px;">LOBBY <span
+                    class="gold-accent">X</span></h2>
+
+            <div class="control-group" style="margin-bottom: 20px;">
+                <input type="text" id="username-input" class="luxury-input" placeholder="Tu Nombre de Jugador"
+                    style="width: 100%; text-align: center;">
+            </div>
+
+            <button class="primary-btn gold-btn full-width" onclick="createRoom()" style="margin-bottom: 15px;">CREAR
+                SALA PRIVADA</button>
+
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="room-code-input" class="luxury-input" placeholder="CÓDIGO DE SALA"
+                    style="text-transform: uppercase;">
+                <button class="game-btn" onclick="joinRoom()">UNIRSE</button>
+            </div>
+
+            <div style="margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 20px;">
+                <button class="ghost-btn" onclick="enterSinglePlayer()">Jugar Solo (Offline Mode)</button>
+            </div>
         </div>
     </div>
 
@@ -331,7 +358,8 @@
         </div>
 
     </div>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <!-- Game Logic Modules -->
+    <script type="module" src="{{ url_for('static', filename='js/game.js') }}"></script>
     <script src="{{ url_for('static', filename='ux-enhancements.js') }}"></script>
     <script src="{{ url_for('static', filename='theme-switcher.js') }}"></script>
     <script>
