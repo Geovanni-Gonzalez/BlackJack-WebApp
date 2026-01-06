@@ -38,22 +38,22 @@ def create_app():
     # Make extensions available to other modules if needed (e.g. limiter)
     app.extensions['limiter'] = limiter
 
-    from app.web.models import db
+    from app.data.models import db
     db.init_app(app)
     
     # Register Blueprints
-    from app.web import web_bp
+    from app.web.controllers.main import web_bp
     app.register_blueprint(web_bp)
 
-    from app.web.auth_routes import auth_bp
+    from app.web.controllers.auth import auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
     
     # Register API Blueprint (Deferred import to avoid circular dependency)
-    from app.web.api_routes import api_bp
+    from app.web.controllers.api import api_bp
     app.register_blueprint(api_bp, url_prefix='/api')
     
     # Initialize SocketIO (Import here to avoid circular imports)
-    from app.web.sockets import socketio
+    from app.web.controllers.sockets import socketio
     socketio.init_app(app)
 
     with app.app_context():

@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, session, current_app
 from app.core.game import BlackJackGame
 from app.ai.montecarlo import MonteCarloSimulator
-from .models import db, PlayerModel, Leaderboard
+from app.data.models import db, PlayerModel, Leaderboard
 from app.ai.qlearning import QLearningAgent
 
 api_bp = Blueprint('api', __name__)
