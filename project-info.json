@@ -2,29 +2,37 @@
     "tech": [
         "Python",
         "Flask",
+        "Flask-SocketIO",
+        "SQLAlchemy",
+        "JavaScript (ES6 Modules)",
         "NumPy",
-        "Matplotlib",
-        "Pandas"
+        "Matplotlib"
     ],
     "features": [
-        "Simulador de Blackjack",
+        "Simulador de Blackjack con IA Avanzada",
+        "Modo Multijugador en Tiempo Real (WebSockets)",
+        "Sistema de Salas Privadas y Lobby",
         "IA con Q-Learning (Reinforcement Learning)",
-        "Simulaciones de Monte Carlo",
+        "Simulaciones de Monte Carlo (Probabilidades en Vivo)",
         "Conteo de Cartas (Hi-Lo System)",
-        "Interfaz Web Pro (Flask)"
+        "Panel de Métricas y Aprendizaje IA",
+        "Autenticación de Usuarios y Persistencia",
+        "Diseño Premium 'Midnight Casino'"
     ],
     "stack": {
         "language": "Python 3.10+",
-        "framework": "Flask",
+        "framework": "Flask + Flask-SocketIO",
+        "database": "SQLite (SQLAlchemy)",
+        "frontend": "HTML5, CSS3, ES6 JavaScript Modules",
         "tools": [
             "NumPy",
-            "Matplotlib",
-            "Pandas"
+            "Pandas",
+            "Chart.js"
         ]
     },
     "screenshots": [],
     "description": {
-        "es": "Aplicación web que simula partidas de Blackjack contra una IA avanzada. Implementa algoritmos de Aprendizaje por Refuerzo (Q-Learning) y simulaciones de Monte Carlo para calcular probabilidades en tiempo real, además de un asistente de conteo de cartas.",
-        "en": "Web application simulating Blackjack games against an advanced AI. Implements Reinforcement Learning (Q-Learning) and Monte Carlo simulations for real-time probability calculation, along with a card counting assistant."
+        "es": "Plataforma avanzada de Blackjack que combina juego multijugador en tiempo real con análisis de Inteligencia Artificial. Incluye un sistema de salas privadas, persistencia de usuarios y un panel educativo que visualiza las decisiones de la IA (Q-Learning) y probabilidades (Monte Carlo) en vivo.",
+        "en": "Advanced Blackjack platform combining real-time multiplayer gaming with Artificial Intelligence analysis. Features private rooms, user persistence, and an educational dashboard visualizing AI decisions (Q-Learning) and probabilities (Monte Carlo) live."
     }
 }

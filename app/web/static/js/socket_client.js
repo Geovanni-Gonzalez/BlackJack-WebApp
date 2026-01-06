@@ -4,8 +4,8 @@ export const socket = io();
 
 export function initSockets() {
     socket.on('connect', () => {
-        console.log('[Socket] Connected!');
-        // socket.emit('join_game', {}); // Removed auto-join global, wait for Lobby
+        console.log('[Socket] Connected!', socket.id);
+        window.mySocketId = socket.id; // Store for turn validation
     });
 
     socket.on('disconnect', () => {

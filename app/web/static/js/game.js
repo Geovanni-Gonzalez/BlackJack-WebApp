@@ -11,14 +11,22 @@ window.showLobby = () => {
     document.getElementById('main-container').style.display = 'none';
 };
 
+// Ensure we start with clean state
+window.currentRoomId = null;
+window.isMultiplayer = false;
+
 window.enterSinglePlayer = () => {
     document.getElementById('lobby-container').style.display = 'none';
     const container = document.getElementById('main-container');
     container.style.display = 'block';
     container.style.opacity = '1';
     container.style.pointerEvents = 'all';
-    playSound('win');
+
+    // Reset flags
     window.isMultiplayer = false;
+    window.currentRoomId = null;
+
+    playSound('win');
     startGame();
 };
 
@@ -71,12 +79,30 @@ window.startGame = async () => {
 };
 
 // Game Actions
-window.hit = () => socket.emit('hit');
-window.stand = () => socket.emit('stand');
-window.doubleDown = () => socket.emit('double');
-window.split = () => socket.emit('split');
-window.withdraw = async () => { const state = await fetchData('/api/withdraw'); updateUI(state); };
-window.insurance = async () => { const state = await fetchData('/api/insurance'); updateUI(state); };
+// Game Actions (Hybrid: Socket for MP, API for Offline)
+async function performAction(actionName, payload = {}) {
+    if (window.isMultiplayer) {
+        socket.emit(actionName, payload);
+    } else {
+        // Map common socket events to API endpoints where names differ
+        let endpoint = `/api/${actionName}`;
+        if (actionName === 'double') endpoint = '/api/double'; // Correct endpoint per api_routes.py
+
+        // Actually, existing api_routes use: /hit, /stand, /double, /split, /insurance
+        // So direct mapping works mostly. 
+        try {
+            const state = await fetchData(endpoint);
+            updateUI(state);
+        } catch (e) { console.error(e); }
+    }
+}
+
+window.hit = () => performAction('hit');
+window.stand = () => performAction('stand');
+window.doubleDown = () => performAction('double');
+window.split = () => performAction('split');
+window.withdraw = () => performAction('withdraw');
+window.insurance = () => performAction('insurance');
 
 // Initialize
 import { initSockets } from './socket_client.js';

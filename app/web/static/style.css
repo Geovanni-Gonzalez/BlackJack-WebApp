@@ -1408,3 +1408,27 @@ input:checked+.slider:before {
     box-shadow: 0 0 30px rgba(231, 76, 60, 0.2);
     border-color: rgba(231, 76, 60, 0.4);
 }
+/* Active Turn Highlight */
+.hand-section.active-turn .cards {
+    transform: scale(1.05);
+    transition: transform 0.3s ease;
+}
+
+.hand-section.active-turn .section-title {
+    color: var(--gold-bright);
+    text-shadow: 0 0 10px var(--gold-primary);
+}
+
+.hand-section.active-turn .card-container {
+    box-shadow: 0 0 15px var(--gold-bright);
+}
+
+/* Host Badge */
+.badge.host {
+    background: var(--accent-red);
+    color: #fff;
+    border-color: var(--accent-red);
+    font-size: 0.6rem;
+    vertical-align: middle;
+    margin-left: 5px;
+}

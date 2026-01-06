@@ -22,10 +22,19 @@ class Hand:
 
     def __setstate__(self, state):
         self.__dict__ = state
-        if 'is_ai' not in self.__dict__:
-            self.is_ai = False
-        if 'player_id' not in self.__dict__:
-            self.player_id = None 
+        # Backward compatibility for existing sessions
+        if 'is_ai' not in self.__dict__: self.is_ai = False
+        if 'player_id' not in self.__dict__: self.player_id = None
+        if 'value' not in self.__dict__: self.value = 0
+        if 'busted' not in self.__dict__: self.busted = False
+        if 'standing' not in self.__dict__: self.standing = False
+        if 'withdrawn' not in self.__dict__: self.withdrawn = False
+        if 'current_bet' not in self.__dict__: self.current_bet = 0
+        if 'initial_bet' not in self.__dict__: self.initial_bet = 0
+        if 'is_double_down' not in self.__dict__: self.is_double_down = False
+        if 'is_split' not in self.__dict__: self.is_split = False
+        if 'is_insurance' not in self.__dict__: self.is_insurance = False
+        if 'split_pair_value' not in self.__dict__: self.split_pair_value = None 
 
     def add_card(self, card):
         self.cards.append(card)

@@ -111,8 +111,10 @@ def on_start_round(data):
     game = game_manager.get_game(s_id)
     if not game: return
     
-    # Only host (Player 0) should start?
-    # For now, allow any player to trigger it to avoid stuck states
+    # Host validation: Only Player 0 (Host) can start new round
+    if game.players and game.players[0].player_id != s_id:
+        emit('error', {'message': "Solo el anfitrión puede iniciar una nueva ronda."})
+        return
     
     # We need to preserve current players! 
     # game.start_new_round logic: if self.players is not empty, it keeps them.

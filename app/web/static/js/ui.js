@@ -171,12 +171,14 @@ export function updateUI(state) {
         }
 
         const playerName = player.owner === 'Human' ? 'Tú' : player.owner;
+        const isHost = (idx === 0); // Player 0 is always Host
+        const hostBadge = isHost ? '<span class="badge host">HOST</span>' : '';
         let statusTag = "";
         if (player.busted) statusTag = `<span class="badge bust">PASADO</span>`;
         if (player.standing) statusTag = `<span class="badge stand">PLANTADO</span>`;
 
         handWrapper.innerHTML = `
-            <div class="section-title">${playerName} ${statusTag}</div>
+            <div class="section-title">${playerName} ${hostBadge} ${statusTag}</div>
             <div class="cards" id="${player.owner}-cards-${idx}"></div>
             <div class="score-pill">${player.value} | $${player.bet}</div>
         `;
@@ -214,27 +216,66 @@ function updateInteractionControls(state) {
         document.getElementById('btn-withdraw').disabled = true;
         document.getElementById('btn-split').style.display = 'none';
         document.getElementById('btn-insurance').style.display = 'none';
-        document.getElementById('btn-new-round').style.display = 'block';
+        // Only show New Round button if it's the Host (or Single Player)
+        // In multiplayer, players[0] is Host.
+        // We need to check if we are the host. 
+        // window.mySocketId must match players[0].player_id
+        const isHost = (!window.isMultiplayer) || (state.players[0] && state.players[0].player_id === window.mySocketId);
+
+        if (isHost) {
+            document.getElementById('btn-new-round').style.display = 'block';
+        } else {
+            document.getElementById('btn-new-round').style.display = 'none';
+            // Maybe show a waiting message instead?
+            // document.getElementById('message-area').innerText += " (Esperando al anfitrión...)";
+        }
         return;
     }
 
     document.getElementById('btn-new-round').style.display = 'none';
 
     const currentPlayer = state.players[state.current_player_idx];
-    const isHuman = (state.current_player_idx === 0);
+
+    // Determine if it is THIS client's turn
+    let isMyTurn = false;
+    if (window.isMultiplayer) {
+        // In Multiplayer, match socket ID
+        // The state.players list usually has owner info. 
+        // We need to match currentPlayer.player_id == window.mySocketId
+        if (currentPlayer && currentPlayer.player_id === window.mySocketId) {
+            isMyTurn = true;
+        }
+    } else {
+        // In Offline, it's my turn if index is 0 (Human)
+        isMyTurn = (state.current_player_idx === 0);
+    }
 
     const hitBtn = document.getElementById('btn-hit');
-    hitBtn.disabled = !isHuman;
-    document.getElementById('btn-stand').disabled = !isHuman;
-    document.getElementById('btn-double').disabled = !isHuman || currentPlayer.cards.length > 2;
+    hitBtn.disabled = !isMyTurn;
+    document.getElementById('btn-stand').disabled = !isMyTurn;
+    document.getElementById('btn-double').disabled = !isMyTurn || currentPlayer.cards.length > 2;
 
     const btnSplit = document.getElementById('btn-split');
     const btnInsurance = document.getElementById('btn-insurance');
-    btnSplit.style.display = (isHuman && currentPlayer.cards.length === 2 && currentPlayer.cards[0].rank === currentPlayer.cards[1].rank) ? 'inline-block' : 'none';
+
+    // Logic for split/insurance needs to respect turn too
+    btnSplit.style.display = (isMyTurn && currentPlayer.cards.length === 2 && currentPlayer.cards[0].rank === currentPlayer.cards[1].rank) ? 'inline-block' : 'none';
 
     // Dealer ace check
     const dealerHasAce = state.dealer_hand && state.dealer_hand.cards.length >= 2 && state.dealer_hand.cards[1].rank === 'A';
-    btnInsurance.style.display = (isHuman && currentPlayer.cards.length === 2 && dealerHasAce && !currentPlayer.is_insurance) ? 'inline-block' : 'none';
+    btnInsurance.style.display = (isMyTurn && currentPlayer.cards.length === 2 && dealerHasAce && !currentPlayer.is_insurance) ? 'inline-block' : 'none';
+
+    // Update Banner to show whose turn it is
+    const banner = document.getElementById('phase-banner');
+    if (banner && !state.game_over) {
+        if (isMyTurn) {
+            banner.innerText = "TU TURNO";
+            banner.style.color = "var(--gold-primary)";
+        } else {
+            banner.innerText = `ESPERANDO A ${currentPlayer.owner}`;
+            banner.style.color = "#888";
+        }
+    }
 }
 
 function renderHand(elementId, cards, flipped = true) {
