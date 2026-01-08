@@ -1,34 +1,58 @@
 {
-    "project": "BlackJack AI WebApp",
-    "tech": [
-        "Python (Flask)",
-        "Flask-SocketIO (Real-time)",
-        "JavaScript (ES6 Modules)",
-        "Reinforcement Learning (Q-Learning)",
-        "SQLAlchemy"
-    ],
-    "features": [
-        "Real-time Multiplayer via WebSockets",
-        "AI Training Dashboard with Q-Learning Visualizer",
-        "Monte Carlo Live Probability Simulations",
-        "Advanced Card Counting (Hi-Lo System)",
-        "Private Room & Lobby Infrastructure",
-        "Premium 'Midnight Casino' UI Aesthetics"
-    ],
-    "stack": {
-        "language": "Python / JavaScript",
-        "framework": "Flask + Socket.IO",
-        "tools": [
-            "NumPy",
-            "Matplotlib",
-            "Pandas",
-            "Chart.js"
+    "en": {
+        "tech": [
+            "Python (Flask)",
+            "Flask-SocketIO",
+            "JavaScript (Vanilla)",
+            "Q-Learning",
+            "Monte Carlo Simulations"
         ],
-        "database": "SQLite (SQLAlchemy Persistence)"
+        "features": [
+            "Real-time Multiplayer via WebSockets",
+            "AI Training Dashboard with Q-Learning Visualizer",
+            "Monte Carlo Live Probability Simulations",
+            "Advanced Card Counting (Hi-Lo System)",
+            "Premium 'Midnight Casino' UI Aesthetics"
+        ],
+        "stack": {
+            "language": "Python / JavaScript",
+            "framework": "Flask",
+            "tools": [
+                "NumPy",
+                "MatPlotLib",
+                "Socket.IO"
+            ],
+            "database": "SQLite (SQLAlchemy)"
+        },
+        "screenshots": [],
+        "description": "An immersive Blackjack platform that bridges the gap between competitive gaming and data science. It features a high-fidelity real-time multiplayer engine powered by WebSockets and a sophisticated AI 'Brain' that uses Q-Learning to recommend optimal moves. Players can visualize dealer probabilities through live Monte Carlo simulations and monitor AI training progress via a dedicated interactive dashboard, all wrapped in a premium noir-style aesthetic."
     },
-    "screenshots": [],
-    "description": {
-        "es": "Plataforma de Blackjack que combina juego multijugador con análisis de IA. Visualiza decisiones tácticas mediante Q-Learning y probabilidades de Monte Carlo en vivo.",
-        "en": "Blackjack platform combining multiplayer gaming with AI analysis. Visualizes tactical decisions via Q-Learning and live Monte Carlo probabilities."
+    "es": {
+        "tech": [
+            "Python (Flask)",
+            "Flask-SocketIO",
+            "JavaScript (Vainilla)",
+            "Q-Learning",
+            "Simulaciones Monte Carlo"
+        ],
+        "features": [
+            "Multijugador en tiempo real mediante WebSockets",
+            "Panel de entrenamiento de IA con visualizador Q-Learning",
+            "Simulaciones de probabilidad de Monte Carlo en vivo",
+            "Conteo de cartas avanzado (Sistema Hi-Lo)",
+            "Estética Premium 'Midnight Casino'"
+        ],
+        "stack": {
+            "language": "Python / JavaScript",
+            "framework": "Flask",
+            "tools": [
+                "NumPy",
+                "MatPlotLib",
+                "Socket.IO"
+            ],
+            "database": "SQLite (SQLAlchemy)"
+        },
+        "screenshots": [],
+        "description": "Una plataforma inmersiva de Blackjack que cierra la brecha entre el juego competitivo y la ciencia de datos. Cuenta con un motor multijugador en tiempo real de alta fidelidad impulsado por WebSockets y un 'Cerebro' de IA sofisticado que utiliza Q-Learning para recomendar los movimientos óptimos. Los jugadores pueden visualizar las probabilidades del crupier mediante simulaciones de Monte Carlo en vivo y monitorear el progreso del entrenamiento de la IA a través de un panel interactivo dedicado, todo bajo una estética premium de estilo noir."
     }
 }
