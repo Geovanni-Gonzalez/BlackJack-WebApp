@@ -1,46 +1,78 @@
-# BlackJack AI WebApp
+﻿# BlackJack WebApp
 
-Project consisting of a Blackjack game where players can face each other or an AI. The AI uses probabilistic algorithms (Monte Carlo) and Reinforcement Learning (Q-Learning) with Card Counting to make decisions.
+## Descripción
+Aplicación web de Blackjack con Flask, sesiones, autenticación, lógica de juego y módulos de IA como Q-Learning, Monte Carlo y conteo.
 
-## Features
+## Objetivo
+Practicar desarrollo web con Python, reglas de juego, persistencia y algoritmos de decision.
 
-- **Core Game**: Standard Blackjack rules (Hit, Stand, Dealer plays to 16).
-- **AI Agent**:
-  - **Q-Learning**: Learns optimal strategy over thousands of games.
-  - **Monte Carlo**: Estimates win probability in real-time.
-  - **Card Counting**: Hi-Lo system integrated into decision making.
-- **Web Interface**:
-  - Flask-based UI.
-  - Real-time advice and probability Stats.
-  - Dynamic game board.
+## Tecnologías utilizadas
+- Python
+- Flask
+- Flask-SocketIO
+- SQLite
+- HTML/CSS/JavaScript
+- Pytest
 
-## Installation
+## Funcionalidades principales
+- Juego web
+- Autenticación y paneles
+- API/controladores
+- Core de cartas/reglas/salas
+- IA y pruebas
 
-1. **Prerequisites**: Python 3.10+
-1. **Instalar dependencias** (si aún no las tienes):
+## Mi rol
+Desarrollé arquitectura Flask, lógica central, controladores y pruebas.
 
-    ```bash
-    pip install -r requirements.txt
-    ```
+## Aprendizajes clave
+- Estructura Flask
+- Reglas de cartas
+- SQLite y sesiones
+- Pytest
+- IA aplicada
 
-2. **Iniciar el Servidor**:
+## Instalación y ejecución
+```bash
+cd BlackJack-WebApp
+python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python app.py
+pytest
+```
 
-    ```bash
-    python app.py
-    ```
+## Estructura del proyecto
+- app.py: entrada
+- app/core/: reglas
+- app/web/: controladores/templates/static
+- app/ai/: estrategias
+- tests/: pruebas
 
-3. **Jugar**:
-    Abre tu navegador en `http://127.0.0.1:5000`
+## Capturas o demo
+![Captura principal](screenshots/principalImage.png)
 
-## Testing
+## Estado del proyecto
+Proyecto funcional con base experimental de IA.
 
-- **Core Logic**: `python test_core.py`
-- **Monte Carlo**: `python test_montecarlo.py`
-- **Q-Learning**: `python test_qlearning.py`
-- **Card Counter**: `python test_counter.py`
+## Valor técnico demostrado
+Demuestra desarrollo Flask, capas, pruebas y algoritmos sobre un dominio interactivo.
 
-## Structure
+## Mejoras futuras
+- Documentar variables de entorno
+- Limpiar sesiones generadas
+- Agregar Docker
 
-- `app/core`: Game rules and engine.
-- `app/ai`: AI algorithms (QLearning, Monte Carlo, Counter).
-- `app/web`: Flask routes and templates.
+## Autor
+Geovanni González  
+Estudiante de Ingeniería en Computación  
+GitHub: [Geovanni-Gonzalez](https://github.com/Geovanni-Gonzalez)
+
+
+
+
+
+
+
+
+
+
