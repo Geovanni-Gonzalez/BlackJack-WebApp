@@ -1,5 +1,7 @@
 ﻿# BlackJack WebApp
 
+[![CI](https://github.com/Geovanni-Gonzalez/BlackJack-WebApp/actions/workflows/ci.yml/badge.svg)](https://github.com/Geovanni-Gonzalez/BlackJack-WebApp/actions/workflows/ci.yml)
+
 ## Descripción
 Aplicación web de Blackjack con Flask, sesiones, autenticación, lógica de juego y módulos de IA como Q-Learning, Monte Carlo y conteo.
 
