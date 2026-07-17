@@ -205,3 +205,12 @@ Partes verificadas solo por analisis estatico: Flask app runtime, autenticacion,
 | IA | 5/10 | Q-Learning tabular y Monte Carlo; no hay modelos avanzados ni evaluacion robusta. |
 | Arquitectura | 6/10 | Capas claras y app factory; falta robustez para escalado y estado distribuido. |
 | DevOps | 5/10 | CI y Docker basicos; no hay despliegue, observabilidad ni versionado de releases. |
+
+---
+
+## Adenda de verificacion (pasada 2026-07-16, tarde)
+
+- ✅ Re-verificado por ejecucion: `pytest` sobre `tests/` → **24/24 pasan** (core, rules, montecarlo, qlearning, counter).
+- ⛔→✅ Higiene corregida: 4 archivos de sesion en `flask_session/` estaban trackeados en git pese a figurar en `.gitignore` (agregados antes de la exclusion). Se aplico `git rm -r --cached flask_session` — pendiente de commit.
+- `instance/blackjack.db` y `.pytest_cache/` verificados como NO trackeados.
+- `q_table.json` permanece versionado de forma intencional (artefacto de modelo referenciado por el README).
