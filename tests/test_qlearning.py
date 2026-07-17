@@ -1,32 +1,39 @@
+import os
 from app.ai.qlearning import QLearningAgent
 
-def test_qlearning():
-    print("--- Q-Learning Training Test ---")
-    agent = QLearningAgent(alpha=0.1, gamma=0.9, epsilon=0.1)
-    
-    print("Training for 2000 episodes...")
-    wins, losses, draws = agent.train(num_episodes=2000)
-    
-    total = wins + losses + draws
-    win_rate = wins / total
-    print(f"Training Complete. Total Games: {total}")
-    print(f"Wins: {wins} ({win_rate:.2%})")
-    print(f"Losses: {losses} ({(losses/total):.2%})")
-    print(f"Draws: {draws} ({(draws/total):.2%})")
-    
-    # Inspect Q-Table for a common state: Player 20, Dealer 6, Neutral Count (0)
-    # Should strongly prefer Stand (0) over Hit (1)
-    state_20_vs_6 = (20, 6, 0)
-    q_vals = agent.get_q_values(state_20_vs_6)
-    print(f"\nState {state_20_vs_6} (Player 20 vs Dealer 6, Neutral Count): {q_vals}")
-    
-    if q_vals[0] > q_vals[1]:
-        print("RESULT: CORRECT (Agent learned to Stand on 20)")
-    else:
-        print("RESULT: UNCERTAIN (Agent prefers Hit? Might need more training or bad luck)")
-    
-    # Check populated size
-    print(f"\nQ-Table Size (States Visited): {len(agent.q_table)}")
 
-if __name__ == "__main__":
-    test_qlearning()
+def _agent(tmp_path):
+    return QLearningAgent(alpha=0.1, gamma=0.9, epsilon=0.1,
+                          model_path=str(tmp_path / 'q_table_test.json'))
+
+
+def test_choose_action_returns_valid_action(tmp_path):
+    assert _agent(tmp_path).choose_action((20, 6, 0)) in (0, 1)
+
+
+def test_get_state_shape(tmp_path):
+    from app.core.game import BlackJackGame
+    agent = _agent(tmp_path)
+    game = BlackJackGame()
+    game.start_new_round(num_ai=0)
+    game.players[0].place_bet(10)
+    game.confirm_bets()
+    state = agent.get_state(game, game.players[0])
+    assert len(state) == 3
+    assert all(isinstance(x, int) for x in state)
+
+
+def test_training_populates_qtable_and_persists(tmp_path):
+    agent = _agent(tmp_path)
+    wins, losses, draws = agent.train(num_episodes=500)
+    assert wins + losses + draws == 500
+    assert len(agent.q_table) > 0
+    assert os.path.exists(agent.model_path)
+
+
+def test_learn_updates_q_value(tmp_path):
+    agent = _agent(tmp_path)
+    state = (18, 10, 0)
+    before = list(agent.get_q_values(state))
+    agent.learn(state, action=1, reward=-1, next_state=(21, 10, 0), done=True)
+    assert agent.get_q_values(state)[1] != before[1]

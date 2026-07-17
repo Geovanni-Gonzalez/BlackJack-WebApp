@@ -44,3 +44,9 @@ desktop.ini
 *.log
 *.tmp
 *.bak
+
+# Runtime state (do not version)
+instance/
+flask_session/
+*.sqlite
+*.db

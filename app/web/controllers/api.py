@@ -1,13 +1,12 @@
 from flask import Blueprint, jsonify, request, session, current_app
 from app.core.game import BlackJackGame
-from app.ai.montecarlo import MonteCarloSimulator
+from app.ai.factory import get_simulator, get_agent
 from app.data.models import db, PlayerModel, Leaderboard
-from app.ai.qlearning import QLearningAgent
 
 api_bp = Blueprint('api', __name__)
 
-# MC Simulator is stateless enough to be global for now (caches will handle optimization)
-mc_sim = MonteCarloSimulator(num_simulations=500)
+# Shared, process-wide Monte Carlo simulator (500 samples).
+mc_sim = get_simulator(num_simulations=500)
 
 def get_game_session():
     """Retrieve or create a game session for the current user."""
@@ -141,10 +140,10 @@ def get_probability():
         
     dealer_card = game.dealer_hand.cards[1]
     current_hand = game.players[game.current_player_idx]
-    
-    # Use cached wrapper or direct call (will add cache later)
-    prob_hit = mc_sim.simulate_hit_win_rate(current_hand, dealer_card)
-    prob_stand = mc_sim.simulate_stand_win_rate(current_hand, dealer_card)
+
+    # Pass the real remaining shoe so the estimate reflects card composition.
+    prob_hit = mc_sim.simulate_hit_win_rate(current_hand, dealer_card, deck=game.deck)
+    prob_stand = mc_sim.simulate_stand_win_rate(current_hand, dealer_card, deck=game.deck)
     
     reason = "Análisis probabilístico"
     p_val = current_hand.value
@@ -172,7 +171,7 @@ def get_qvalues():
     if game.game_over or game.waiting_for_bets:
         return jsonify({'q_stand': 0, 'q_hit': 0, 'state': None})
     
-    agent = QLearningAgent()
+    agent = get_agent()
     current_hand = game.players[game.current_player_idx]
     state = agent.get_state(game, current_hand)
     q_vals = agent.get_q_values(state)
@@ -224,7 +223,7 @@ def save_leaderboard():
 @api_bp.route('/strategy/heatmap', methods=['GET'])
 def get_strategy_heatmap():
     try:
-        agent = QLearningAgent()
+        agent = get_agent()
         heatmap = agent.generate_strategy_heatmap()
         return jsonify({
             'heatmap': heatmap,
@@ -240,7 +239,7 @@ def get_strategy_details():
     try:
         player_sum = int(request.args.get('player_sum', 15))
         dealer_card = int(request.args.get('dealer_card', 10))
-        agent = QLearningAgent()
+        agent = get_agent()
         details = agent.get_strategy_details(player_sum, dealer_card)
         return jsonify({'player_sum': player_sum, 'dealer_card': dealer_card, 'details': details})
     except Exception as e:
@@ -249,7 +248,7 @@ def get_strategy_details():
 @api_bp.route('/strategy/compare', methods=['GET'])
 def compare_strategies():
     try:
-        agent = QLearningAgent()
+        agent = get_agent()
         comparison = agent.compare_with_basic_strategy()
         return jsonify(comparison)
     except Exception as e:

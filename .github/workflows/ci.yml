@@ -27,3 +27,6 @@ jobs:
 
       - name: Compile Python sources
         run: python -m compileall app.py app tests
+
+      - name: Run tests
+        run: python -m pytest -q

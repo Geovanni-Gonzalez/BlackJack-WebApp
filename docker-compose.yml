@@ -1,0 +1,11 @@
+services:
+  web:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      APP_ENV: production
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in your .env}
+      DATABASE_URL: sqlite:////app/instance/blackjack.db
+    volumes:
+      - ./instance:/app/instance
